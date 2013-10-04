@@ -112,7 +112,10 @@ function readFile(event) {
     lines[i] = lines[i].split(",");
   }
   var header = lines.shift();
-  while (header[0] && header[0] != "Type") header = lines.shift();
+  while (header[0] != "Type") {
+    header = lines.shift();
+    if (!header.length || header.length<0) return;
+  }
 
   for (row=0; row<lines.length; row++) {
     if (lines[row].length<=1) continue;
