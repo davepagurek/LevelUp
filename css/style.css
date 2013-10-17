@@ -29,6 +29,18 @@ h1 {
   -webkit-border-radius: 10px;
   border-radius: 10px;
 }
+#olddrop {
+  margin: 0 100px 100px 100px;
+  padding:100px;
+  color:#95a5a6;
+  text-align:center;
+  font-size:25px;
+  overflow:hidden;
+  position:relative;
+  background-color:#FFF;
+  -webkit-border-radius: 10px;
+  border-radius: 10px;
+}
 #drop.over, #drop:hover {
   color:#2c3e50;
   border: 4px dashed #2c3e50;
@@ -101,6 +113,8 @@ tr:last-child td {
   color:#000;
   font-size: 20px;
   border:0;
+  cursor:pointer;
+  text-decoration:none;
 }
 .button:hover {
   color:#FFF;
