@@ -411,6 +411,7 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
     document.getElementById("drop").className = "hidden";
     document.getElementById("olddrop").className = "";
     document.getElementById("file2").addEventListener("change", loadFile, false);
+    document.getElementById("save").className = "button hidden";
   }
 } else {
   throwError("Your browser does not support file reading capabilities. Try opening this program in a modern browser such as <a href='https://www.google.com/intl/en/chrome/browser/' target='_blank'>Google Chrome.</a>");
