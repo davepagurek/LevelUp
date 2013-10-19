@@ -12,6 +12,12 @@ h1, h2 {
 h1 {
   font-size:70px;
 }
+a {
+  color:#FFF;
+}
+a:hover {
+  color:#DDD;
+}
 #start {
   background-color:#FFF;
   padding:100px 0 0 0;
@@ -58,8 +64,22 @@ h1 {
 }
 
 #info {
-  padding:50px 200px;
+  padding:50px 20px;
   background-color:#c0392b;
+}
+
+#body {
+  max-width:1200px;
+  margin:auto;
+}
+
+#body table {
+  margin-left:auto;
+  margin-right:auto;
+}
+
+li {
+  margin-bottom:8px;
 }
 
 #results {
@@ -115,8 +135,40 @@ tr:last-child td {
   border:0;
   cursor:pointer;
   text-decoration:none;
+  font-weight:normal;
 }
 .button:hover {
   color:#FFF;
   background-color:#95a5a6;
+}
+
+@media all and (max-width:1400px) {
+  table {
+    font-size:13px;
+  }
+  tr, td, th {
+    padding:15px;
+  }
+}
+
+@media all and (max-width:1000px) {
+  table {
+    font-size:12px;
+  }
+  tr, td, th {
+    padding:11px;
+  }
+}
+
+@media print {    
+  .no-print, .no-print * {
+    display:none;
+  }
+  body {
+    background-color: #FFF;
+    color:#000;
+  }
+  #data {
+    margin:0 auto;
+  }
 }

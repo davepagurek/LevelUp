@@ -1,8 +1,13 @@
+//Check if the browser has support for the necessary file reader APIs
 if (window.File && window.FileReader && window.FileList && window.Blob) {
+
+  //If the drag area is being dragged over, adjust it visually
   function dragEvent (event) {
     event.stopPropagation(); 
     event.preventDefault();
     this.className = "over";
+
+    //If a file has been dropped and it is a CSV file, read the file
     if (event.type == "drop") {
       if (event.dataTransfer.files[0].name.indexOf(".csv") != -1) {
         var reader = new FileReader();
@@ -15,10 +20,12 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
     }  
   }
   
+  //When a file is dragged over the drag area and leaves, reset its visual style
   function dragLeaveEvent(event) {
     this.className = "";
   }
 
+  //If the user has browsed for a file and it is a valid CSV file, read the file
   function loadFile(event) {
     var files = event.target.files;
     if (files.length>0) {
@@ -32,31 +39,41 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
     }
   }
 
+  //Reset the document to open a new file
+  function reset(event) {
+    document.getElementById("start").className = "no-print";
+    document.getElementById("results").className = "hidden";
+    document.getElementById("fileForm").reset();
+    document.getElementById("fileForm2").reset();
+  }
+
+  //Prints the page. The @media print section of the CSS hides everything but the results
+  function printPage(event) {
+    window.print();
+  }
+
+  //Listen for drag and click handlers
   document.getElementById("drop").addEventListener("dragenter", dragEvent, false);
   document.getElementById("drop").addEventListener("dragover", dragEvent, false);
   document.getElementById("drop").addEventListener("drop", dragEvent, false);
   document.getElementById("drop").addEventListener("dragleave", dragLeaveEvent, false);
   document.getElementById("file").addEventListener("change", loadFile, false);
   document.getElementById("redo").addEventListener("click", reset, false);
+  document.getElementById("print").addEventListener("click", printPage, false);
 
-  /*@cc_on
-   @if (@_jscript_version >= 5)
-      document.getElementById("drop").className = "hidden";
-      document.getElementById("olddrop").className = "";
-      document.getElementById("file2").addEventListener("change", loadFile, false);
-   @end 
-  @*/
+  //Detects if the user is using Internet Explorer.
+  //It is used to only show a browse button for Internet Explorer since its
+  //drag-and-drap functionality is a bit sketchy.
+  if (!!(navigator.userAgent.match(/Trident/) || navigator.userAgent.match(/MSIE/))) {
+    document.getElementById("drop").className = "hidden";
+    document.getElementById("olddrop").className = "";
+    document.getElementById("file2").addEventListener("change", loadFile, false);
+  }
 } else {
   alert("Please run this program in a more modern browser such as Google Chrome.");
 }
 
-function reset(event) {
-  document.getElementById("start").className = "";
-  document.getElementById("results").className = "hidden";
-  document.getElementById("fileForm").reset();
-  document.getElementById("fileForm2").reset();
-}
-
+//Conversion table from levels to percentages
 var termMarks = {
   "R": {
     "-": 25,
@@ -89,21 +106,31 @@ var termMarks = {
     "": 100
   },
   "A": {
-    "": 0
+    "": -1 //The program later uses -1 as a sign to ignore the mark
   },
   "B": {
     "": 0
   }
 }
 
+//Converts a level to a percent
 function getPercent(str) {
-  if (!str) return 0;
+
+  //Ignore the mark if the input is messed up
+  if (!str) return -1;
+
+  //Removes unnecessary whitespace from CSV
   str = str.trim();
+
+  //If the mark is written with the operator first (e.g. -4), reverse it (becomes 4-)
   var operators = "+-";
   if (operators.indexOf(str.substring(0, 1))!=-1) str = str.split("").reverse().join("");
+
+  //Return the corresponding percentage in the table
   return termMarks[str.substring(0, 1)][str.substring(1)];
 }
 
+//Class to store student mark data
 function Student(lastName, firstName) {
   this.lastName = lastName || "";
   this.firstName = firstName || "";
@@ -114,29 +141,39 @@ function Student(lastName, firstName) {
   this.summative = 0;
   this.examMarks = [];
   this.exam = 0;
+  this.oldAvg = 0;
   this.finalAvg = 0;
 }
 
+//Parses a CSV from a loadend event and averages marks
 function readFile(event) {
-  document.getElementById("start").className = "hidden";
+
+  //Show the results part of the page
+  document.getElementById("start").className = "no-print hidden";
   document.getElementById("results").className = "";
 
+  //Split CSV into an array lines[row][col]
   var lines = this.result.split("\n");
-  var start = [];
   var header = [];
   var results = [];
   for (var i=0; i<lines.length; i++) {
     lines[i] = lines[i].split(",");
   }
+
+  //Ignore all lines before the word "Type"
   header = lines.shift();
   while (header[0] != "Type") {
-    start.push(header);
     header = lines.shift();
     if (!header.length || header.length<0) return;
   }
 
+  //Parse student marks
   for (row=0; row<lines.length; row++) {
-    if (lines[row].length<=1) continue;
+
+    //Ignore blank lines or lines with no marks
+    if (lines[row].length<=2) continue;
+
+    //create a new Student and add any marks found in O.A, S, or E columns to their arrays
     var s = new Student(lines[row][0], lines[row][1]);
     for (col=2; col<header.length; col++) {
       if (header[col].indexOf("O.A")==0) {
@@ -148,40 +185,80 @@ function readFile(event) {
       }
     }
 
+    //Average all marks in each category, but only if the marks for that category aren't all -1.
+    var hasMark=false;
     for (i=0; i<s.termMarks.length; i++) {
-      s.term += s.termMarks[i];
+      if (s.termMarks[i]>=0) {
+        s.term += s.termMarks[i];
+        hasMark=true;
+      }
     }
-    s.term /= s.termMarks.length;
+    if (!hasMark) {
+      s.term=-1;
+    } else {
+      s.term /= s.termMarks.length;
+    }
 
+    hasMark=false;
     for (i=0; i<s.summativeMarks.length; i++) {
-      s.summative += s.summativeMarks[i];
+      if (s.summativeMarks[i]>=0) {
+        s.summative += s.summativeMarks[i];
+        hasMark=true;
+      }
     }
-    s.summative /= s.summativeMarks.length;
+    if (!hasMark) {
+      s.summative=-1;
+    } else {
+      s.summative /= s.summativeMarks.length;
+    }
 
+    //For the post-exam term mark, if the nth exam mark is larger than the nth
+    //term mark, calculate the average using that exam mark rather than the term mark.
+    hasMark=false;
     for (i=0; i<s.termMarks.length; i++) {
       if (s.examMarks[i] && s.examMarks[i]>s.termMarks[i]) {
         s.termFinal += s.examMarks[i];
       } else {
-        s.termFinal += s.termMarks[i];
+        if (s.termMarks[i]>=0) {
+          s.termFinal += s.termMarks[i];
+          hasMark=true;
+        }
       }
     }
-    s.termFinal /= s.termMarks.length;
+    if (!hasMark) {
+      s.termFinal=-1;
+    } else {
+      s.termFinal /= s.termMarks.length;
+    }
 
+    hasMark=false;
     for (i=0; i<s.examMarks.length; i++) {
-      s.exam += s.examMarks[i];
+      if (s.examMarks[i]>=0) {
+        s.exam += s.examMarks[i];
+        hasMark=true;
+      }
     }
     s.exam /= s.examMarks.length;
+    if (!hasMark) s.exam=-1;
 
-    if (s.summative && s.exam) {
+    //Calculate final average using the post-exam term mark and
+    //"old" average using the pre-exam term mark with appropriate
+    //sectional weighting
+    if (s.summative != -1 && s.exam != -1) {
       s.finalAvg = s.termFinal*0.7 + s.summative*0.1 + s.exam*0.2;
-    } else if (s.summative && !s.exam) {
+      s.oldAvg = s.term*0.7 + s.summative*0.1 + s.exam*0.2;
+    } else if (s.summative != -1 && s.exam == -1) {
       s.finalAvg = s.termFinal*0.7 + s.summative*0.3;
-    } else if (!s.summative && s.exam) {
+      s.oldAvg = s.term*0.7 + s.summative*0.3;
+    } else if (s.summative == -1 && s.exam != -1) {
       s.finalAvg = s.termFinal*0.7 + s.exam*0.3;
+      s.oldAvg = s.term*0.7 + s.exam*0.3;
     } else {
       s.finalAvg = s.termFinal;
+      s.oldAvg = s.term;
     }
 
+    //Add the student to the list of results
     results.push(s);
   }
 
@@ -189,8 +266,12 @@ function readFile(event) {
   createCSV(results);
 }
 
+//Build a results table
 function displayStudents(results) {
+
+  //Make table and header elements
   var table = document.createElement("table");
+  table.id="averages";
   var header = document.createElement("tr");
   header.className = "header";
 
@@ -215,6 +296,10 @@ function displayStudents(results) {
   exam.innerHTML = "Exam";
   header.appendChild(exam);
 
+  var oldAvg = document.createElement("th");
+  oldAvg.innerHTML = "Old Final";
+  header.appendChild(oldAvg);
+
   var finalAvg = document.createElement("th");
   finalAvg.innerHTML = "Final";
   finalAvg.className = "final";
@@ -222,6 +307,7 @@ function displayStudents(results) {
 
   table.appendChild(header);
 
+  //Add all the students in rows
   for (var i=0; i<results.length; i++) {
     var row = document.createElement("tr");
 
@@ -239,12 +325,16 @@ function displayStudents(results) {
     row.appendChild(c2);
 
     var s = document.createElement("td");
-    s.innerHTML = results[i].summative ? (results[i].summative.toFixed(2) + "%") : "---";
+    s.innerHTML = (results[i].summative != -1) ? (results[i].summative.toFixed(2) + "%") : "---";
     row.appendChild(s);
 
     var e = document.createElement("td");
-    e.innerHTML = results[i].exam ? (results[i].exam.toFixed(2) + "%") : "---";
+    e.innerHTML = (results[i].exam != -1) ? (results[i].exam.toFixed(2) + "%") : "---";
     row.appendChild(e);
+
+    var o = document.createElement("td");
+    o.innerHTML = results[i].oldAvg.toFixed(2) + "%";
+    row.appendChild(o);
 
     var f = document.createElement("td");
     f.className = "final"
@@ -254,21 +344,30 @@ function displayStudents(results) {
     table.appendChild(row);
   }
 
+  //Add the elements to the page
   document.getElementById("data").innerHTML = "";
   document.getElementById("data").appendChild(table);
 }
 
+//Creates a CSV oout of the results
 function createCSV(results) {
-  var csv="Last,First,Term,Term Post-Exam,Summative,Exam,Final,\n";
+
+  //Create header row
+  var csv="Last,First,Term,Term Post-Exam,Summative,Exam,Old Final,Final,\n";
+
+  //Add all the student marks
   for (var i=0; i<results.length; i++) {
     csv+=results[i].lastName + ",";
     csv+=results[i].firstName + ",";
     csv+=results[i].term + ",";
     csv+=results[i].termFinal + ",";
-    csv+=(results[i].summative ? results[i].summative : "---") + ",";
-    csv+=(results[i].exam ? results[i].exam : "---") + ",";
+    csv+=((results[i].summative != -1) ? results[i].summative : "---") + ",";
+    csv+=((results[i].exam != -1) ? results[i].exam : "---") + ",";
+    csv+=results[i].oldAvg + ",";
     csv+=results[i].finalAvg + ",\n";
   }
+
+  //Make the save button link to this file
   document.getElementById("save").href = "data:application/octet-stream;charset=utf-8," + encodeURIComponent(csv);
   document.getElementById("save").download = "AveragedMarks.csv";
 }
