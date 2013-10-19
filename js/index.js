@@ -1,80 +1,19 @@
 //LevelUp, Mark converter and Averager by David Pagurek.
 //Code available at https://github.com/pahgawk/LevelUp
 
-//Check if the browser has support for the necessary file reader APIs
-if (window.File && window.FileReader && window.FileList && window.Blob) {
+//Enumerations
+var IGNORE = -1;
+var ERROR = -2;
 
-  //If the drag area is being dragged over, adjust it visually
-  function dragEvent (event) {
-    event.stopPropagation(); 
-    event.preventDefault();
-    this.className = "over";
+//Shows the specified error message
+function throwError(message) {
+  document.getElementById("start").className = "no-print hidden";
+  document.getElementById("results").className = "hidden";
+  document.getElementById("error").className = "no-print";
+  document.getElementById("errorMessage").innerHTML = message;
+  window.scrollTo(0,0);
 
-    //If a file has been dropped and it is a CSV file, read the file
-    if (event.type == "drop") {
-      this.className = "";
-      if (event.dataTransfer.files[0].name.indexOf(".csv") != -1) {
-        var reader = new FileReader();
-        reader.addEventListener("loadend", readFile, false);
-        reader.readAsText(event.dataTransfer.files[0]);
-      } else {
-        alert("Only upload .csv files, please!");
-      }
-    }  
-  }
-  
-  //When a file is dragged over the drag area and leaves, reset its visual style
-  function dragLeaveEvent(event) {
-    this.className = "";
-  }
-
-  //If the user has browsed for a file and it is a valid CSV file, read the file
-  function loadFile(event) {
-    var files = event.target.files;
-    if (files.length>0) {
-      if (files[0].name.indexOf(".csv") != -1) {
-        var reader = new FileReader();
-        reader.addEventListener("loadend", readFile, false);
-        reader.readAsText(files[0]);
-      } else {
-        alert("Only upload .csv files, please!");
-      }
-    }
-  }
-
-  //Reset the document to open a new file
-  function reset(event) {
-    document.getElementById("start").className = "no-print";
-    document.getElementById("results").className = "hidden";
-    document.getElementById("fileForm").reset();
-    document.getElementById("fileForm2").reset();
-    window.scrollTo(0,0);
-  }
-
-  //Prints the page. The @media print section of the CSS hides everything but the results
-  function printPage(event) {
-    window.print();
-  }
-
-  //Listen for drag and click handlers
-  document.getElementById("drop").addEventListener("dragenter", dragEvent, false);
-  document.getElementById("drop").addEventListener("dragover", dragEvent, false);
-  document.getElementById("drop").addEventListener("drop", dragEvent, false);
-  document.getElementById("drop").addEventListener("dragleave", dragLeaveEvent, false);
-  document.getElementById("file").addEventListener("change", loadFile, false);
-  document.getElementById("redo").addEventListener("click", reset, false);
-  document.getElementById("print").addEventListener("click", printPage, false);
-
-  //Detects if the user is using Internet Explorer.
-  //It is used to only show a browse button for Internet Explorer since its
-  //drag-and-drap functionality is a bit sketchy.
-  if (!!(navigator.userAgent.match(/Trident/) || navigator.userAgent.match(/MSIE/))) {
-    document.getElementById("drop").className = "hidden";
-    document.getElementById("olddrop").className = "";
-    document.getElementById("file2").addEventListener("change", loadFile, false);
-  }
-} else {
-  alert("Please run this program in a more modern browser such as Google Chrome.");
+  return ERROR;
 }
 
 //Conversion table from levels to percentages
@@ -110,7 +49,7 @@ var termMarks = {
     "": 100
   },
   "A": {
-    "": -1 //The program later uses -1 as a sign to ignore the mark
+    "": IGNORE
   },
   "B": {
     "": 0
@@ -120,15 +59,21 @@ var termMarks = {
 //Converts a level to a percent
 function getPercent(str) {
 
-  //Ignore the mark if the input is messed up
-  if (!str) return -1;
+  //Ignore the mark if there's no input
+  if (!str) return IGNORE;
 
   //Removes unnecessary whitespace from CSV
   str = str.trim();
 
+  //If the input was just a whitespace character (now removed), ignore the mark
+  if (str == "") return IGNORE;
+
   //If the mark is written with the operator first (e.g. -4), reverse it (becomes 4-)
   var operators = "+-";
   if (operators.indexOf(str.substring(0, 1))!=-1) str = str.split("").reverse().join("");
+
+  //If the program read in an input that isn't valid, return an error.
+  if (termMarks[str.substring(0, 1)] === undefined || termMarks[str.substring(0, 1)][str.substring(1)] === undefined) return throwError("Not a valid level: " + str);
 
   //Return the corresponding percentage in the table
   return termMarks[str.substring(0, 1)][str.substring(1)];
@@ -160,15 +105,21 @@ function readFile(event) {
   var lines = this.result.split("\n");
   var header = [];
   var results = [];
+
+  //Find deliminator being used based on number of occurrences
+  var commas = (this.result.match(/,/g) || []).length;
+  var semicolons = (this.result.match(/;/g) || []).length;
+  var deliminator = (commas>=semicolons)?",":";";
+
   for (var i=0; i<lines.length; i++) {
-    lines[i] = lines[i].split(",");
+    lines[i] = lines[i].split(deliminator);
   }
 
   //Ignore all lines before the word "Type"
   header = lines.shift();
   while (header[0] != "Type") {
     header = lines.shift();
-    if (!header.length || header.length<0) return;
+    if (!header || !header.length || header.length<0) return throwError("Either \"Type\" is missing from the header row or the CSV uses the wrong deliminator.");
   }
 
   //Parse student marks
@@ -180,16 +131,26 @@ function readFile(event) {
     //create a new Student and add any marks found in O.A, S, or E columns to their arrays
     var s = new Student(lines[row][0], lines[row][1]);
     for (col=2; col<header.length; col++) {
-      if (header[col].indexOf("O.A")==0) {
-        s.termMarks.push(getPercent(lines[row][col]));
-      } else if (header[col].indexOf("S")==0 && header[col].length<=2) {
-        s.summativeMarks.push(getPercent(lines[row][col]));
-      } else if (header[col].indexOf("E")==0 && header[col].length<=2) {
-        s.examMarks.push(getPercent(lines[row][col]));
+      var percent = IGNORE;
+      if (header[col].indexOf("O.A")==0 || header[col].indexOf("S")==0 || header[col].indexOf("E")==0) {
+        percent = getPercent(lines[row][col]);
+      }
+
+      //Stop program on invalid input
+      if (percent == ERROR) {
+        return;
+      } else {
+        if (header[col].indexOf("O.A")==0) {
+          s.termMarks.push(percent);
+        } else if (header[col].indexOf("S")==0 && header[col].length<=2) {
+          s.summativeMarks.push(percent);
+        } else if (header[col].indexOf("E")==0 && header[col].length<=2) {
+          s.examMarks.push(percent);
+        }
       }
     }
 
-    //Average all marks in each category, but only if the marks for that category aren't all -1.
+    //Average all marks in each category, but only if the marks for that category aren't all IGNORE.
     var hasMark=false;
     for (i=0; i<s.termMarks.length; i++) {
       if (s.termMarks[i]>=0) {
@@ -198,7 +159,7 @@ function readFile(event) {
       }
     }
     if (!hasMark) {
-      s.term=-1;
+      s.term=IGNORE;
     } else {
       s.term /= s.termMarks.length;
     }
@@ -211,7 +172,7 @@ function readFile(event) {
       }
     }
     if (!hasMark) {
-      s.summative=-1;
+      s.summative=IGNORE;
     } else {
       s.summative /= s.summativeMarks.length;
     }
@@ -230,7 +191,7 @@ function readFile(event) {
       }
     }
     if (!hasMark) {
-      s.termFinal=-1;
+      s.termFinal=IGNORE;
     } else {
       s.termFinal /= s.termMarks.length;
     }
@@ -243,18 +204,18 @@ function readFile(event) {
       }
     }
     s.exam /= s.examMarks.length;
-    if (!hasMark) s.exam=-1;
+    if (!hasMark) s.exam=IGNORE;
 
     //Calculate final average using the post-exam term mark and
     //"old" average using the pre-exam term mark with appropriate
     //sectional weighting
-    if (s.summative != -1 && s.exam != -1) {
+    if (s.summative != IGNORE && s.exam != IGNORE) {
       s.finalAvg = s.termFinal*0.7 + s.summative*0.1 + s.exam*0.2;
       s.oldAvg = s.term*0.7 + s.summative*0.1 + s.exam*0.2;
-    } else if (s.summative != -1 && s.exam == -1) {
+    } else if (s.summative != IGNORE && s.exam == IGNORE) {
       s.finalAvg = s.termFinal*0.7 + s.summative*0.3;
       s.oldAvg = s.term*0.7 + s.summative*0.3;
-    } else if (s.summative == -1 && s.exam != -1) {
+    } else if (s.summative == IGNORE && s.exam != IGNORE) {
       s.finalAvg = s.termFinal*0.7 + s.exam*0.3;
       s.oldAvg = s.term*0.7 + s.exam*0.3;
     } else {
@@ -329,11 +290,11 @@ function displayStudents(results) {
     row.appendChild(c2);
 
     var s = document.createElement("td");
-    s.innerHTML = (results[i].summative != -1) ? (results[i].summative.toFixed(2) + "%") : "---";
+    s.innerHTML = (results[i].summative != IGNORE) ? (results[i].summative.toFixed(2) + "%") : "---";
     row.appendChild(s);
 
     var e = document.createElement("td");
-    e.innerHTML = (results[i].exam != -1) ? (results[i].exam.toFixed(2) + "%") : "---";
+    e.innerHTML = (results[i].exam != IGNORE) ? (results[i].exam.toFixed(2) + "%") : "---";
     row.appendChild(e);
 
     var o = document.createElement("td");
@@ -365,8 +326,8 @@ function createCSV(results) {
     csv+=results[i].firstName + ",";
     csv+=results[i].term + ",";
     csv+=results[i].termFinal + ",";
-    csv+=((results[i].summative != -1) ? results[i].summative : "---") + ",";
-    csv+=((results[i].exam != -1) ? results[i].exam : "---") + ",";
+    csv+=((results[i].summative != IGNORE) ? results[i].summative : "---") + ",";
+    csv+=((results[i].exam != IGNORE) ? results[i].exam : "---") + ",";
     csv+=results[i].oldAvg + ",";
     csv+=results[i].finalAvg + ",\n";
   }
@@ -374,4 +335,83 @@ function createCSV(results) {
   //Make the save button link to this file
   document.getElementById("save").href = "data:application/octet-stream;charset=utf-8," + encodeURIComponent(csv);
   document.getElementById("save").download = "AveragedMarks.csv";
+}
+
+//Check if the browser has support for the necessary file reader APIs
+if (window.File && window.FileReader && window.FileList && window.Blob) {
+
+  //If the drag area is being dragged over, adjust it visually
+  function dragEvent (event) {
+    event.stopPropagation(); 
+    event.preventDefault();
+    this.className = "over";
+
+    //If a file has been dropped and it is a CSV file, read the file
+    if (event.type == "drop") {
+      this.className = "";
+      if (event.dataTransfer.files[0].name.indexOf(".csv") != IGNORE) {
+        var reader = new FileReader();
+        reader.addEventListener("loadend", readFile, false);
+        reader.readAsText(event.dataTransfer.files[0]);
+      } else {
+        alert("Only upload .csv files, please!");
+      }
+    }  
+  }
+  
+  //When a file is dragged over the drag area and leaves, reset its visual style
+  function dragLeaveEvent(event) {
+    this.className = "";
+  }
+
+  //If the user has browsed for a file and it is a valid CSV file, read the file
+  function loadFile(event) {
+    var files = event.target.files;
+    if (files.length>0) {
+      if (files[0].name.indexOf(".csv") != IGNORE) {
+        var reader = new FileReader();
+        reader.addEventListener("loadend", readFile, false);
+        reader.readAsText(files[0]);
+      } else {
+        alert("Only upload .csv files, please!");
+      }
+    }
+  }
+
+  //Reset the document to open a new file
+  function reset(event) {
+    document.getElementById("start").className = "no-print";
+    document.getElementById("results").className = "hidden";
+    document.getElementById("error").className = "no-print hidden";
+    document.getElementById("errorMessage").innerHTML = "";
+    document.getElementById("fileForm").reset();
+    document.getElementById("fileForm2").reset();
+    window.scrollTo(0,0);
+  }
+
+  //Prints the page. The @media print section of the CSS hides everything but the results
+  function printPage(event) {
+    window.print();
+  }
+
+  //Listen for drag and click handlers
+  document.getElementById("drop").addEventListener("dragenter", dragEvent, false);
+  document.getElementById("drop").addEventListener("dragover", dragEvent, false);
+  document.getElementById("drop").addEventListener("drop", dragEvent, false);
+  document.getElementById("drop").addEventListener("dragleave", dragLeaveEvent, false);
+  document.getElementById("file").addEventListener("change", loadFile, false);
+  document.getElementById("redo").addEventListener("click", reset, false);
+  document.getElementById("redoError").addEventListener("click", reset, false);
+  document.getElementById("print").addEventListener("click", printPage, false);
+
+  //Detects if the user is using Internet Explorer.
+  //It is used to only show a browse button for Internet Explorer since its
+  //drag-and-drap functionality is a bit sketchy.
+  if (!!(navigator.userAgent.match(/Trident/) || navigator.userAgent.match(/MSIE/))) {
+    document.getElementById("drop").className = "hidden";
+    document.getElementById("olddrop").className = "";
+    document.getElementById("file2").addEventListener("change", loadFile, false);
+  }
+} else {
+  throwError("Your browser does not support file reading capabilities. Try opening this program in a modern browser such as <a href='https://www.google.com/intl/en/chrome/browser/' target='_blank'>Google Chrome.</a>");
 }

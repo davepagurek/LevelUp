@@ -68,6 +68,22 @@ a:hover {
   background-color:#c0392b;
 }
 
+#error {
+  padding:50px 20px;
+  background-color:#c0392b;
+  text-align:center;
+}
+
+#error .button {
+  margin-top:40px;
+}
+
+#errorMessage {
+  max-width:800px;
+  text-align:left;
+  display:inline-block;
+}
+
 #body {
   max-width:1200px;
   margin:auto;
