@@ -1,3 +1,6 @@
+//LevelUp, Mark converter and Averager by David Pagurek.
+//Code available at https://github.com/pahgawk/LevelUp
+
 //Check if the browser has support for the necessary file reader APIs
 if (window.File && window.FileReader && window.FileList && window.Blob) {
 
@@ -9,12 +12,12 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
 
     //If a file has been dropped and it is a CSV file, read the file
     if (event.type == "drop") {
+      this.className = "";
       if (event.dataTransfer.files[0].name.indexOf(".csv") != -1) {
         var reader = new FileReader();
         reader.addEventListener("loadend", readFile, false);
         reader.readAsText(event.dataTransfer.files[0]);
       } else {
-        this.className = "";
         alert("Only upload .csv files, please!");
       }
     }  
@@ -45,6 +48,7 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
     document.getElementById("results").className = "hidden";
     document.getElementById("fileForm").reset();
     document.getElementById("fileForm2").reset();
+    window.scrollTo(0,0);
   }
 
   //Prints the page. The @media print section of the CSS hides everything but the results
