@@ -54,7 +54,7 @@ var termMarks = {
   "B": {
     "": 0
   }
-}
+};
 
 //Converts a level to a percent
 function getPercent(str) {
@@ -66,7 +66,7 @@ function getPercent(str) {
   str = str.trim();
 
   //If the input was just a whitespace character (now removed), ignore the mark
-  if (str == "") return IGNORE;
+  if (str === "") return IGNORE;
 
   //If the mark is written with the operator first (e.g. -4), reverse it (becomes 4-)
   var operators = "+-";
@@ -123,16 +123,16 @@ function readFile(event) {
   }
 
   //Parse student marks
-  for (row=0; row<lines.length; row++) {
+  for (var row=0; row<lines.length; row++) {
 
     //Ignore blank lines or lines with no marks
     if (lines[row].length<=2) continue;
 
     //create a new Student and add any marks found in O.A, S, or E columns to their arrays
     var s = new Student(lines[row][0], lines[row][1]);
-    for (col=2; col<header.length; col++) {
+    for (var col=2; col<header.length; col++) {
       var percent = IGNORE;
-      if (header[col].indexOf("O.A")==0 || header[col].indexOf("S")==0 || header[col].indexOf("E")==0) {
+      if (header[col].indexOf("O.A")===0 || header[col].indexOf("S")===0 || header[col].indexOf("E")===0) {
         percent = getPercent(lines[row][col]);
       }
 
@@ -140,71 +140,78 @@ function readFile(event) {
       if (percent == ERROR) {
         return;
       } else {
-        if (header[col].indexOf("O.A")==0) {
+        if (header[col].indexOf("O.A")===0) {
           s.termMarks.push(percent);
-        } else if (header[col].indexOf("S")==0 && header[col].length<=2) {
+        } else if (header[col].indexOf("S")===0 && header[col].length<=2) {
           s.summativeMarks.push(percent);
-        } else if (header[col].indexOf("E")==0 && header[col].length<=2) {
+        } else if (header[col].indexOf("E")===0 && header[col].length<=2) {
           s.examMarks.push(percent);
         }
       }
     }
 
     //Average all marks in each category, but only if the marks for that category aren't all IGNORE.
-    var hasMark=false;
+    var ignored = 0;
     for (i=0; i<s.termMarks.length; i++) {
       if (s.termMarks[i]>=0) {
         s.term += s.termMarks[i];
-        hasMark=true;
+      } else {
+        ignored++;
       }
     }
-    if (!hasMark) {
+    if (ignored == s.termMarks.length) {
       s.term=IGNORE;
     } else {
-      s.term /= s.termMarks.length;
+      s.term /= (s.termMarks.length - ignored);
     }
 
-    hasMark=false;
+    ignored=0;
     for (i=0; i<s.summativeMarks.length; i++) {
       if (s.summativeMarks[i]>=0) {
         s.summative += s.summativeMarks[i];
-        hasMark=true;
+      } else {
+        ignored++;
       }
     }
-    if (!hasMark) {
+    if (ignored == s.summativeMarks.length) {
       s.summative=IGNORE;
     } else {
-      s.summative /= s.summativeMarks.length;
+      s.summative /= (s.summativeMarks.length - ignored);
     }
 
     //For the post-exam term mark, if the nth exam mark is larger than the nth
     //term mark, calculate the average using that exam mark rather than the term mark.
-    hasMark=false;
+    ignored=0;
     for (i=0; i<s.termMarks.length; i++) {
       if (s.examMarks[i] && s.examMarks[i]>s.termMarks[i]) {
         s.termFinal += s.examMarks[i];
       } else {
         if (s.termMarks[i]>=0) {
           s.termFinal += s.termMarks[i];
-          hasMark=true;
+        } else {
+          ignored++;
         }
       }
     }
-    if (!hasMark) {
+    if (ignored == s.termMarks.length) {
       s.termFinal=IGNORE;
     } else {
-      s.termFinal /= s.termMarks.length;
+      s.termFinal /= (s.termMarks.length - ignored);
     }
 
-    hasMark=false;
+    ignored=0;
     for (i=0; i<s.examMarks.length; i++) {
       if (s.examMarks[i]>=0) {
         s.exam += s.examMarks[i];
-        hasMark=true;
+      } else {
+        ignored++;
       }
     }
-    s.exam /= s.examMarks.length;
-    if (!hasMark) s.exam=IGNORE;
+    if (ignored == s.examMarks.length) {
+      s.exam=IGNORE;
+    } else {
+      s.exam  /= (s.examMarks.length - ignored);
+    }
 
     //Calculate final average using the post-exam term mark and
     //"old" average using the pre-exam term mark with appropriate
@@ -302,7 +309,7 @@ function displayStudents(results) {
     row.appendChild(o);
 
     var f = document.createElement("td");
-    f.className = "final"
+    f.className = "final";
     f.innerHTML = results[i].finalAvg.toFixed(2) + "%";
     row.appendChild(f);
 
@@ -337,62 +344,15 @@ function createCSV(results) {
   document.getElementById("save").download = "AveragedMarks.csv";
 }
 
+
+
+
+
+//Main routine
+//
+//
 //Check if the browser has support for the necessary file reader APIs
 if (window.File && window.FileReader && window.FileList && window.Blob) {
-
-  //If the drag area is being dragged over, adjust it visually
-  function dragEvent (event) {
-    event.stopPropagation(); 
-    event.preventDefault();
-    this.className = "over";
-
-    //If a file has been dropped and it is a CSV file, read the file
-    if (event.type == "drop") {
-      this.className = "";
-      if (event.dataTransfer.files[0].name.indexOf(".csv") != IGNORE) {
-        var reader = new FileReader();
-        reader.addEventListener("loadend", readFile, false);
-        reader.readAsText(event.dataTransfer.files[0]);
-      } else {
-        alert("Only upload .csv files, please!");
-      }
-    }  
-  }
-  
-  //When a file is dragged over the drag area and leaves, reset its visual style
-  function dragLeaveEvent(event) {
-    this.className = "";
-  }
-
-  //If the user has browsed for a file and it is a valid CSV file, read the file
-  function loadFile(event) {
-    var files = event.target.files;
-    if (files.length>0) {
-      if (files[0].name.indexOf(".csv") != IGNORE) {
-        var reader = new FileReader();
-        reader.addEventListener("loadend", readFile, false);
-        reader.readAsText(files[0]);
-      } else {
-        alert("Only upload .csv files, please!");
-      }
-    }
-  }
-
-  //Reset the document to open a new file
-  function reset(event) {
-    document.getElementById("start").className = "no-print";
-    document.getElementById("results").className = "hidden";
-    document.getElementById("error").className = "no-print hidden";
-    document.getElementById("errorMessage").innerHTML = "";
-    document.getElementById("fileForm").reset();
-    document.getElementById("fileForm2").reset();
-    window.scrollTo(0,0);
-  }
-
-  //Prints the page. The @media print section of the CSS hides everything but the results
-  function printPage(event) {
-    window.print();
-  }
 
   //Listen for drag and click handlers
   document.getElementById("drop").addEventListener("dragenter", dragEvent, false);
@@ -415,4 +375,62 @@ if (window.File && window.FileReader && window.FileList && window.Blob) {
   }
 } else {
   throwError("Your browser does not support file reading capabilities. Try opening this program in a modern browser such as <a href='https://www.google.com/intl/en/chrome/browser/' target='_blank'>Google Chrome.</a>");
+}
+
+
+//Events used by main routine
+//
+//
+//If the drag area is being dragged over, adjust it visually
+function dragEvent (event) {
+  event.stopPropagation();
+  event.preventDefault();
+  this.className = "over";
+
+  //If a file has been dropped and it is a CSV file, read the file
+  if (event.type == "drop") {
+    this.className = "";
+    if (event.dataTransfer.files[0].name.indexOf(".csv") != IGNORE) {
+      var reader = new FileReader();
+      reader.addEventListener("loadend", readFile, false);
+      reader.readAsText(event.dataTransfer.files[0]);
+    } else {
+      throwError("Only upload .csv files, please!");
+    }
+  }
+}
+
+//When a file is dragged over the drag area and leaves, reset its visual style
+function dragLeaveEvent(event) {
+  this.className = "";
+}
+
+//If the user has browsed for a file and it is a valid CSV file, read the file
+function loadFile(event) {
+  var files = event.target.files;
+  if (files.length>0) {
+    if (files[0].name.indexOf(".csv") != IGNORE) {
+      var reader = new FileReader();
+      reader.addEventListener("loadend", readFile, false);
+      reader.readAsText(files[0]);
+    } else {
+      throwError("Only upload .csv files, please!");
+    }
+  }
+}
+
+//Reset the document to open a new file
+function reset(event) {
+  document.getElementById("start").className = "no-print";
+  document.getElementById("results").className = "hidden";
+  document.getElementById("error").className = "no-print hidden";
+  document.getElementById("errorMessage").innerHTML = "";
+  document.getElementById("fileForm").reset();
+  document.getElementById("fileForm2").reset();
+  window.scrollTo(0,0);
+}
+
+//Prints the page. The @media print section of the CSS hides everything but the results
+function printPage(event) {
+  window.print();
 }
