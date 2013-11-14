@@ -289,11 +289,11 @@ function displayStudents(results) {
     row.appendChild(n);
 
     var c = document.createElement("td");
-    c.innerHTML = results[i].term.toFixed(2) + "%";
+    c.innerHTML = (results[i].term != IGNORE) ? (results[i].term.toFixed(2) + "%") : "---";
     row.appendChild(c);
 
     var c2 = document.createElement("td");
-    c2.innerHTML = results[i].termFinal.toFixed(2) + "%";
+    c2.innerHTML = (results[i].termFinal != IGNORE) ? (results[i].termFinal.toFixed(2) + "%") : "---";
     row.appendChild(c2);
 
     var s = document.createElement("td");
