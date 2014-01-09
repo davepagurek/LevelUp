@@ -122,6 +122,10 @@ function readFile(event) {
     if (!header || !header.length || header.length<0) return throwError("Either \"Type\" is missing from the header row or the CSV uses the wrong deliminator.");
   }
 
+  for (var h=0; h<header.length; h++) {
+    header[h] = header[h].replace(/(\r\n|\n|\r)/gm,"");
+  }
+
   //Parse student marks
   for (var row=0; row<lines.length; row++) {
 
