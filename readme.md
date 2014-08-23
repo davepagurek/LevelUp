@@ -1,5 +1,5 @@
 <h1>Level Up</h1>
-<h2>Level Converter and Averager by <a href="http://www.pahgawks.com">Dave Pagurek</a></h2>
+<h2>Level Converter and Averager by <a href="http://www.davepagurek.com">Dave Pagurek</a></h2>
 <h3>What This Does</h3>
 <p>It reads in a comma-deliminated CSV file in the following format:</p>
 <table>
