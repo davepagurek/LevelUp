@@ -1,0 +1,30 @@
+{
+  "name": "levelup",
+  "version": "1.0.0",
+  "description": "A marking tool for teachers",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel src -d dist/lib",
+    "fonts": "webfont-dl \"http://fonts.googleapis.com/css?family=Oxygen:300,400,700\" -o ./dist/fonts/fonts.css",
+    "launch": "nw",
+    "start": "npm run build && npm run launch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davepagurek/LevelUp.git"
+  },
+  "author": "Dave Pagurek",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/davepagurek/LevelUp/issues"
+  },
+  "homepage": "https://github.com/davepagurek/LevelUp#readme",
+  "dependencies": {
+    "nw": "^0.12.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.4.5",
+    "webfont-dl": "^0.1.2"
+  }
+}
