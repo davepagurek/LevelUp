@@ -22,7 +22,7 @@ a:hover {
   background-color:#FFF;
   padding:100px 0 0 0;
 }
-#drop {
+.drop_target {
   margin: 0 100px 100px 100px;
   padding:100px;
   border: 4px dashed #95a5a6;
@@ -35,23 +35,11 @@ a:hover {
   -webkit-border-radius: 10px;
   border-radius: 10px;
 }
-#olddrop {
-  margin: 0 100px 100px 100px;
-  padding:100px;
-  color:#95a5a6;
-  text-align:center;
-  font-size:25px;
-  overflow:hidden;
-  position:relative;
-  background-color:#FFF;
-  -webkit-border-radius: 10px;
-  border-radius: 10px;
-}
-#drop.over, #drop:hover {
+.drop_target.over, .drop_target:hover {
   color:#2c3e50;
   border: 4px dashed #2c3e50;
 }
-#file {
+.file_input {
   position:absolute;
   top:-500px;
   left:-500px;

@@ -1,0 +1,21 @@
+{
+  "name": "levelup",
+  "description": "A marking tool for teachers",
+  "main": "index.html",
+  "authors": [
+    "Dave Pagurek"
+  ],
+  "license": "ISC",
+  "homepage": "https://github.com/davepagurek/LevelUp",
+  "moduleType": [],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "react": "^0.14.7"
+  }
+}
