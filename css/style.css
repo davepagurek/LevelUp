@@ -9,21 +9,50 @@ h1, h2 {
   font-weight:300;
   text-align:center;
 }
+h3 {
+  font-weight: normal;
+  font-size: 16px;
+  font-style: italic;
+  text-align: center;
+}
 h1 {
-  font-size:70px;
+  font-size:40px;
 }
 a {
   color:#FFF;
+  cursor: pointer;
 }
 a:hover {
   color:#DDD;
 }
-#start {
+h1 a {
+  color: #FFF;
+}
+.start {
   background-color:#FFF;
-  padding:100px 0 0 0;
+  padding:50px;
+}
+.loader {
+  display:none;
+  position: fixed;
+  z-index:1000;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  color: #FFF;
+  background-color:rgba(200, 20, 20, 0.5);
+  opacity: 0;
+  justify-content: center;
+  align-items: center;
+  transition: all linear 0.3s;
+}
+.loader.open {
+  display: flex;
+  opacity: 1;
 }
 .drop_target {
-  margin: 0 100px 100px 100px;
+  margin: 0;
   padding:100px;
   border: 4px dashed #95a5a6;
   color:#95a5a6;
@@ -49,6 +78,53 @@ a:hover {
 }
 .hidden {
   display:none;
+}
+
+section {
+  display: flex;
+  align-items: stretch;
+  padding: 30px;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+.column {
+  flex: 1;
+  margin-right: 20px;
+  text-align: center;
+}
+.column:last-child {
+  margin-right: 0;
+}
+
+section.options {
+  background-color: #FFF;
+  color: #000;
+}
+
+section.menu {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  padding: 30px;
+}
+section.menu a {
+  display: block;
+  flex: 1;
+  padding: 20px;
+  background-color: #FFF;
+  color: #111;
+  margin:10px;
+  border-radius:4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0,1.5,0.5,1);
+}
+section.menu a:hover {
+  transform: scale(1.1, 1.1);
 }
 
 #info {
@@ -86,12 +162,12 @@ li {
   margin-bottom:8px;
 }
 
-#results {
+.results {
   text-align:center;
   margin-bottom:100px;
 }
 
-#data {
+.data {
   background-color:#FFF;
   margin: 100px auto;
   padding:75px;
@@ -133,22 +209,88 @@ tr td:last-child {
   border-right:none;
 }
 
-.button {
-  -webkit-border-radius: 10px;
-  border-radius: 10px;
-  padding:20px;
-  background-color:#FFF;
-  color:#000;
-  font-size: 20px;
+.button, button {
+  display: inline-block;
+  font-family: inherit;
+  font-size: inherit;
+  border-radius: 5px;
+  border: 0;
+  padding:10px;
+  background-color:#999;
+  color:#FFF;
   border:0;
   cursor:pointer;
   text-decoration:none;
   font-weight:normal;
+  transition: all 0.3s cubic-bezier(0,1.5,0.5,1);
 }
-.button:hover {
-  color:#FFF;
-  background-color:#95a5a6;
+.button:hover, button:hover {
+  transform: scale(1.1, 1.1);
 }
+.button[disabled], button[disabled] {
+  transform: scale(1,1);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mappings {
+  max-height: 150px;
+  overflow-y: auto;
+  background-color: #EEE;
+  padding: 20px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  z-index: 10;
+  transform: translateZ(0);
+  margin-bottom:10px;
+}
+.mappings .markMap {
+  max-width: 180px;
+  margin: 0 auto 6px auto;
+  z-index: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.mappings .markMap:last-child {
+  margin-bottom:0;
+}
+.mappings .markMap .info {
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+}
+.mappings .markMap button {
+  font-size: 0.8em;
+  padding: 10px;
+  margin-left: 20px;
+}
+.addMapping {
+  display: flex;
+  align-items: center;
+}
+.addMapping > input {
+  flex: 1;
+}
+.addMapping .mappingValue {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.addMapping button {
+  margin-left: 20px;
+}
+.addMapping span {
+  margin: 0 20px;
+}
+
+section.center {
+  align-items: center;
+  padding-top:0;
+}
+
+
 
 @media all and (max-width:1400px) {
   table {
