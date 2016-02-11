@@ -5,6 +5,7 @@ let fs = require('fs');class LevelUp extends React.Component {
     this.state = {
       path: [],
       loading: false,
+      codeLength: 6,
       markMaps: {
         "R-": 25,
         "-R": 25,
@@ -66,6 +67,12 @@ let fs = require('fs');class LevelUp extends React.Component {
     var lines = this.state.data.slice();
     let result = studentGrades(lines, this.state.markMaps);
     this.setState({converted: result});
+  }
+
+  generateCodes() {
+    var lines = this.state.data.slice();
+    let result = makeCodes(lines, this.state.key || '', this.state.codeLength || 6);
+    this.setState({codes: result}, () => console.log(this.state.codes));
   }
 
   getAppBody() {
@@ -160,6 +167,52 @@ let fs = require('fs');class LevelUp extends React.Component {
               <section className='results'>
                 <table className='averages'>
                 {this.state.converted.map((row, i) => {
+                  return (<tr className={i==0 ? 'header' : ''}>
+                    {row.map((cell) => (i == 0 ?
+                      (<th>{cell}</th>)
+                      : (<td>{cell}</td>)
+                    ))}
+                  </tr>);
+                })}
+                </table>
+              </section>
+            ) : undefined}
+          </div>
+        );
+      case 'codes':
+        return (
+          <div>
+            <section className='options'>
+              <div className='row'>
+                <div className='column'>
+                  <input
+                    type='text'
+                    value={this.state.key}
+                    onChange={(e)=>this.setState({key: e.target.value})}
+                  />
+                  <h3>Secret key</h3>
+                  <h4>{'Without using a secret key, it is possible (although still impractical) to decode the result. By adding a key that only you know, it is virtually impossible to decode without knowing the key. If this is not a concern, it may be left blank.'}</h4>
+
+                </div>
+                <div className='column'>
+                <input
+                    type='number'
+                    min='1'
+                    max='64'
+                    value={this.state.codeLength}
+                    onChange={(e)=>this.setState({codeLength: e.target.value})}
+                  />
+                  <h3>Code Length</h3>
+                  <button onClick={()=>this.generateCodes()}>
+                    Generate codes
+                  </button>
+                </div>
+              </div>
+            </section>
+            {this.state.codes ? (
+              <section className='results'>
+                <table className='averages'>
+                {this.state.codes.map((row, i) => {
                   return (<tr className={i==0 ? 'header' : ''}>
                     {row.map((cell) => (i == 0 ?
                       (<th>{cell}</th>)

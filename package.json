@@ -22,6 +22,7 @@
   "homepage": "https://github.com/davepagurek/LevelUp#readme",
   "dependencies": {
     "csv": "^0.4.6",
+    "js-md5": "^0.4.0",
     "lodash": "^4.2.1",
     "nw": "^0.12.3",
     "react": "^0.14.7",
