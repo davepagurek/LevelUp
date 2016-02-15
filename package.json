@@ -8,7 +8,9 @@
     "compile": "babel src --out-file dist/lib/app.js",
     "fonts": "webfont-dl \"http://fonts.googleapis.com/css?family=Oxygen:300,400,700\" -o ./dist/fonts/fonts.css",
     "launch": "nw",
-    "start": "npm run compile && npm run launch"
+    "start": "npm run compile && npm run launch",
+    "build-win": "nwbuild -p win32 -v 0.12.0 .",
+    "build-osx": "nwbuild -p osx64 -v 0.12.0 ."
   },
   "repository": {
     "type": "git",
@@ -38,6 +40,7 @@
     "babel-preset-react": "^6.3.13",
     "babel-preset-stage-0": "^6.3.13",
     "esperanto": "^0.7.5",
+    "nw-builder": "^2.2.0",
     "rollup": "^0.25.3",
     "webfont-dl": "^0.1.2",
     "webpack": "^1.12.13"

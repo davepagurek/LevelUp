@@ -66,13 +66,17 @@ let fs = require('fs');class LevelUp extends React.Component {
   doConversions() {
     var lines = this.state.data.slice();
     let result = studentGrades(lines, this.state.markMaps);
-    this.setState({converted: result});
+    this.setState({converted: result}, () => {
+      smoothScr.anim('.results');
+    });
   }
 
   generateCodes() {
     var lines = this.state.data.slice();
     let result = makeCodes(lines, this.state.key || '', this.state.codeLength || 6);
-    this.setState({codes: result}, () => console.log(this.state.codes));
+    this.setState({codes: result}, () => {
+      smoothScr.anim('.results');
+    });
   }
 
   getAppBody() {

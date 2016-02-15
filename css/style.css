@@ -148,12 +148,15 @@ section.menu a:hover {
   display:inline-block;
 }
 
-#body {
+.results {
   max-width:1200px;
   margin:auto;
+  margin:30px;
+  padding:0;
+  overflow-x: auto;
 }
 
-#body table {
+.results table {
   margin-left:auto;
   margin-right:auto;
 }
