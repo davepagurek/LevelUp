@@ -4,4 +4,6 @@ dist/
 dist/*
 build/
 build/*
+cache
+cache/*
 .DS_Store

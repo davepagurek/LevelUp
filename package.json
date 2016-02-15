@@ -1,6 +1,6 @@
 {
   "name": "levelup",
-  "version": "1.0.3",
+  "version": "1.0.0",
   "description": "A marking tool for teachers",
   "main": "index.html",
   "scripts": {
@@ -9,7 +9,7 @@
     "fonts": "webfont-dl \"http://fonts.googleapis.com/css?family=Oxygen:300,400,700\" -o ./dist/fonts/fonts.css",
     "launch": "nw",
     "start": "npm run compile && npm run launch",
-    "package": "nwjs-release"
+    "package": "node package.js"
   },
   "repository": {
     "type": "git",
