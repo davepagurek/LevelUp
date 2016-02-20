@@ -1,5 +1,48 @@
 let csv = require('csv');
-let fs = require('fs');class LevelUp extends React.Component {
+let fs = require('fs');
+let pdf = require('html-pdf');
+let css = `
+table {
+  margin-left:auto;
+  margin-right:auto;
+  width:auto;
+  background-color:#FFF;
+  color:#000;
+  border-collapse:collapse;
+  font-family: sans-serif;
+}
+
+tr, td, th {
+  padding:20px;
+  margin:0;
+}
+
+th {
+  border-bottom: 3px solid #7f8c8d;
+}
+
+td {
+  border-right: 1px solid #7f8c8d;
+  border-bottom: 1px solid #7f8c8d;
+}
+
+tr:last-child td {
+  border-bottom:0;
+}
+
+tr td:last-child {
+  border-right:none;
+}
+
+table {
+  font-size:12px;
+}
+tr, td, th {
+  padding:11px;
+}
+`;
+
+class LevelUp extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -63,12 +106,76 @@ let fs = require('fs');class LevelUp extends React.Component {
       });
   }
 
-  doConversions() {
+  chooseFile(defaultFilename, callback) {
+    callback = callback || function(){};
+    var chooser = document.getElementById('fileDialog');
+    chooser.setAttribute('nwsaveas', defaultFilename || '');
+    var onChange = function() {
+      callback(this.value);
+      chooser.removeEventListener('change', onChange);
+      this.value = null;
+    };
+    chooser.addEventListener('change', onChange);
+
+    chooser.click();  
+  }
+
+  alert(text) {
+    this.setState({alert: text || ""});
+  }
+
+  doConversions(options) {
+    options = options || {};
     var lines = this.state.data.slice();
     let result = studentGrades(lines, this.state.markMaps);
-    this.setState({converted: result}, () => {
-      smoothScr.anim('.results');
-    });
+
+    if (options.csv) {
+      this.setState({loading: true});
+      csv.stringify(result, (err, csvText) => {
+        if (err) return this.setState({error: `${err}`, loading: false});
+        this.chooseFile('converted.csv', (filename) => {
+          fs.writeFile(filename, csvText, (error) => {
+            if (error) return this.setState({error: `${error}`, loading: false});
+            this.setState({loading: false});
+            this.alert('File saved successfully.');
+            console.log('done');
+          })
+        });
+      });
+    } else if (options.pdf) {
+      this.setState({loading: true});
+      let html = `<style>${css}</style>` +
+        '<table class="averages">' +
+        result.map((row, i) => {
+          return `<tr className=${i==0 ? 'header' : ''}>` +
+            row.map((cell) => (i == 0 ?
+              `<th>${cell}</th>`
+              : `<td>${cell}</td>`
+            )).join(' ') +
+          '</tr>';
+        }).join(' ') +
+        '</table>';
+      let options = {
+        format: 'Letter',
+        border: {
+          "top": "0.8in",
+          "right": "0.5in",
+          "bottom": "0.8in",
+          "left": "0.5in"
+        }
+      };
+      this.chooseFile('converted.pdf', (filename) => {
+        pdf.create(html, options).toFile(filename, (error, res) => {
+          if (error) return this.setState({error: `${error}`, loading: false});
+          this.setState({loading: false});
+          this.alert('File saved successfully.');
+        });
+      });
+    } else {
+      this.setState({converted: result}, () => {
+        smoothScr.anim('.results');
+      });
+    }
   }
 
   generateCodes() {
@@ -161,8 +268,14 @@ let fs = require('fs');class LevelUp extends React.Component {
                   </div>
                 </div>
                 <div className='column'>
-                  <button onClick={()=>this.doConversions()}>
-                    Convert
+                  <button className='singleLine' onClick={()=>this.doConversions()}>
+                    Preview
+                  </button>
+                  <button className='singleLine' onClick={()=>this.doConversions({csv: true})}>
+                    Export CSV
+                  </button>
+                  <button className='singleLine' onClick={()=>this.doConversions({pdf: true})}>
+                    Export PDF
                   </button>
                 </div>
               </div>
@@ -199,7 +312,7 @@ let fs = require('fs');class LevelUp extends React.Component {
 
                 </div>
                 <div className='column'>
-                <input
+                  <input
                     type='number'
                     min='1'
                     max='64'
@@ -257,6 +370,15 @@ let fs = require('fs');class LevelUp extends React.Component {
   render() {
     return (
       <div className='app'>
+        {this.state.alert ? 
+          (<div className='alert'>
+            <p>{this.state.alert}</p>
+            <button onClick={()=>this.setState({alert: null})}>
+              OK
+            </button>
+          </div>)
+          : undefined
+        }
         <div className={`loader ${this.state.loading ? 'open' : ''}`}>
           <h3>Loading...</h3>
         </div>

@@ -293,6 +293,26 @@ section.center {
   padding-top:0;
 }
 
+.alert {
+  position: fixed;
+  top:50%;
+  left: 50%;
+  margin-top: -150px;
+  margin-left: -200px;
+  width: 400px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  flex-direction: column;
+  background-color: #FFF;
+  color: #000;
+  z-index:9000;
+}
+
 
 
 @media all and (max-width:1400px) {

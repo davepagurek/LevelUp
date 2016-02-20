@@ -1,7 +1,7 @@
 var NwBuilder = require('nw-builder');
 var nw = new NwBuilder({
-  files: ['./package.json', './dist/**/*', './node_modules/**/*', './bower_components/**/*', './css/**/*', '!./node_modules/nw-builder/**/*', '!./node_modules/nw/**/*'], // use the glob format
-  platforms: ['win32'],
+  files: ['index.html', './package.json', './dist/**/*', './node_modules/**/*', './bower_components/**/*', './css/**/*', '!./node_modules/nw-builder/**/*', '!./node_modules/nw/**/*'], // use the glob format
+  platforms: ['osx64'],
   version: '0.12.3',
   buildDir: './build',
   zip: false

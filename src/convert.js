@@ -164,6 +164,7 @@ function studentGrades(lines, termMarks) {
     results.push(s);
   }
 
+  console.log(results.map((s)=>s.oldAvg));
   return [
     ['Student', 'Term', 'Term Post-Exam', 'Summative', 'Exam', 'Old Final', 'Final']
   ].concat(results.map((s) => [
@@ -172,7 +173,7 @@ function studentGrades(lines, termMarks) {
     (s.termFinal != IGNORE) ? (s.termFinal.toFixed(2) + "%") : "---",
     (s.summative != IGNORE) ? (s.summative.toFixed(2) + "%") : "---",
     (s.exam != IGNORE) ? (s.exam.toFixed(2) + "%") : "---",
-    s.oldAvg.toFixed(2) + "%",
-    s.finalAvg.toFixed(2) + "%"
+    (s.oldAvg != IGNORE ? s.oldAvg.toFixed(2) + "%" : "---"),
+    (s.finalAvg != IGNORE ? s.finalAvg.toFixed(2) + "%" : "---")
   ]));
 }
