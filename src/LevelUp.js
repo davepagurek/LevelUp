@@ -130,10 +130,10 @@ class LevelUp extends React.Component {
     let result = studentGrades(lines, this.state.markMaps);
 
     if (options.csv) {
-      this.setState({loading: true});
       csv.stringify(result, (err, csvText) => {
         if (err) return this.setState({error: `${err}`, loading: false});
         this.chooseFile('converted.csv', (filename) => {
+          this.setState({loading: true});
           fs.writeFile(filename, csvText, (error) => {
             if (error) return this.setState({error: `${error}`, loading: false});
             this.setState({loading: false});
@@ -143,7 +143,6 @@ class LevelUp extends React.Component {
         });
       });
     } else if (options.pdf) {
-      this.setState({loading: true});
       let html = `<style>${css}</style>` +
         '<table class="averages">' +
         result.map((row, i) => {
@@ -165,6 +164,7 @@ class LevelUp extends React.Component {
         }
       };
       this.chooseFile('converted.pdf', (filename) => {
+        this.setState({loading: true});
         pdf.create(html, options).toFile(filename, (error, res) => {
           if (error) return this.setState({error: `${error}`, loading: false});
           this.setState({loading: false});
@@ -178,12 +178,56 @@ class LevelUp extends React.Component {
     }
   }
 
-  generateCodes() {
+  generateCodes(options) {
     var lines = this.state.data.slice();
     let result = makeCodes(lines, this.state.key || '', this.state.codeLength || 6);
-    this.setState({codes: result}, () => {
-      smoothScr.anim('.results');
-    });
+    if (options.csv) {
+      this.setState({loading: true});
+      csv.stringify(result, (err, csvText) => {
+        if (err) return this.setState({error: `${err}`, loading: false});
+        this.chooseFile('converted.csv', (filename) => {
+          fs.writeFile(filename, csvText, (error) => {
+            if (error) return this.setState({error: `${error}`, loading: false});
+            this.setState({loading: false});
+            this.alert('File saved successfully.');
+            console.log('done');
+          })
+        });
+      });
+    } else if (options.pdf) {
+      this.setState({loading: true});
+      this.chooseFile('codes.pdf', (filename) => {
+        let html = `<style>${css}</style>` +
+          '<table class="codes">' +
+          result.map((row, i) => {
+            return `<tr className=${i==0 ? 'header' : ''}>` +
+              row.map((cell) => (i == 0 ?
+                `<th>${cell}</th>`
+                : `<td>${cell}</td>`
+              )).join(' ') +
+            '</tr>';
+          }).join(' ') +
+          '</table>';
+        let options = {
+          format: 'Letter',
+          border: {
+            "top": "0.8in",
+            "right": "0.5in",
+            "bottom": "0.8in",
+            "left": "0.5in"
+          }
+        };
+        pdf.create(html, options).toFile(filename, (error, res) => {
+          if (error) return this.setState({error: `${error}`, loading: false});
+          this.setState({loading: false, codes: result});
+          this.alert('File saved successfully.');
+        });
+      });
+    } else {
+      this.setState({codes: result}, () => {
+        smoothScr.anim('.results');
+      });
+    }
   }
 
   getAppBody() {
@@ -250,7 +294,7 @@ class LevelUp extends React.Component {
                         <option selected={!this.state.nextPercent || this.state.nextPercent != 'ignore'} value='value'>Value</option>
                       </select>
                       {!this.state.nextPercent || this.state.nextPercent != 'ignore' ?
-                        (<input onChange={(e)=>this.setState({nextPercent: e.target.value})} type='number' min='0' max='100' value={this.state.nextPercent} />)
+                        (<input onChange={(e)=>this.setState({nextPercent: parseFloat(e.target.value)})} type='number' min='0' max='100' value={this.state.nextPercent} />)
                         : undefined}
                     </div>
                     <button disabled={!this.state.nextLevel || !this.state.nextPercent} onClick={()=>{
@@ -320,8 +364,11 @@ class LevelUp extends React.Component {
                     onChange={(e)=>this.setState({codeLength: e.target.value})}
                   />
                   <h3>Code Length</h3>
-                  <button onClick={()=>this.generateCodes()}>
+                  <button onClick={()=>this.generateCodes(false)}>
                     Generate codes
+                  </button>
+                  <button onClick={()=>this.generateCodes(true)}>
+                    Export PDF
                   </button>
                 </div>
               </div>

@@ -79,6 +79,7 @@ function studentGrades(lines, termMarks) {
         }
       }
     }
+    console.log(s);
 
     //Average all marks in each category, but only if the marks for that category aren't all IGNORE.
     var ignored = 0;
@@ -97,7 +98,7 @@ function studentGrades(lines, termMarks) {
 
     ignored=0;
     for (i=0; i<s.summativeMarks.length; i++) {
-      if (s.summativeMarks[i]>=0) {
+      if (s.summativeMarks[i] != IGNORE && s.summativeMarks[i]>=0) {
         s.summative += s.summativeMarks[i];
       } else {
         ignored++;
@@ -107,26 +108,6 @@ function studentGrades(lines, termMarks) {
       s.summative=IGNORE;
     } else {
       s.summative /= (s.summativeMarks.length - ignored);
-    }
-
-    //For the post-exam term mark, if the nth exam mark is larger than the nth
-    //term mark, calculate the average using that exam mark rather than the term mark.
-    ignored=0;
-    for (i=0; i<s.termMarks.length; i++) {
-      if (s.examMarks[i] && (!s.termMarks[i] || s.termMarks[i] == IGNORE || (s.termMarks[i] && s.examMarks[i]>s.termMarks[i]))) {
-        s.termFinal += s.examMarks[i];
-      } else {
-        if (s.termMarks[i] != IGNORE && s.termMarks[i]>=0) {
-          s.termFinal += s.termMarks[i];
-        } else {
-          ignored++;
-        }
-      }
-    }
-    if (ignored == s.termMarks.length) {
-      s.termFinal=IGNORE;
-    } else {
-      s.termFinal /= (s.termMarks.length - ignored);
     }
 
     ignored=0;
@@ -143,6 +124,26 @@ function studentGrades(lines, termMarks) {
       s.exam  /= (s.examMarks.length - ignored);
     }
 
+    //For the post-exam term mark, if the nth exam mark is larger than the nth
+    //term mark, calculate the average using that exam mark rather than the term mark.
+    ignored=0;
+    for (i=0; i<s.termMarks.length; i++) {
+      if (s.examMarks[i] && s.examMarks[i] != IGNORE && (!s.termMarks[i] || s.termMarks[i] == IGNORE || (s.termMarks[i] && s.examMarks[i]>s.termMarks[i]))) {
+        s.termFinal += s.examMarks[i];
+      } else {
+        if (s.termMarks[i] != IGNORE && s.termMarks[i]>=0) {
+          s.termFinal += s.termMarks[i];
+        } else {
+          ignored++;
+        }
+      }
+    }
+    if (ignored == s.termMarks.length || s.exam == IGNORE) {
+      s.termFinal=IGNORE;
+    } else {
+      s.termFinal /= (s.termMarks.length - ignored);
+    }
+
     //Calculate final average using the post-exam term mark and
     //"old" average using the pre-exam term mark with appropriate
     //sectional weighting
@@ -150,7 +151,7 @@ function studentGrades(lines, termMarks) {
       s.finalAvg = s.termFinal*0.7 + s.summative*0.1 + s.exam*0.2;
       s.oldAvg = s.term*0.7 + s.summative*0.1 + s.exam*0.2;
     } else if (s.summative != IGNORE && s.exam == IGNORE) {
-      s.finalAvg = s.termFinal*0.7 + s.summative*0.3;
+      s.finalAvg = s.term*0.7 + s.summative*0.3;
       s.oldAvg = s.term*0.7 + s.summative*0.3;
     } else if (s.summative == IGNORE && s.exam != IGNORE) {
       s.finalAvg = s.termFinal*0.7 + s.exam*0.3;
