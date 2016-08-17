@@ -6,6 +6,7 @@
       var smoothScr = {
       iterr : 30, // set timeout miliseconds ..decreased with 1ms for each iteration
         tm : null, //timeout local variable
+        frames: 0, //timeout local variable
       stopShow: function()
       {
         clearTimeout(this.tm); // stopp the timeout
@@ -31,6 +32,8 @@
       anim : function (id) // the main func
       {
         this.stopShow(); // for click on another button or link
+        this.frames++;
+
         var eOff, pOff, tOff, scrVal, pos, dir, step;
 
         eOff = document.querySelector(id).offsetTop; // element offsetTop
@@ -65,9 +68,10 @@
              smoothScr.anim(id);  
           }, this.iterr); 
         }  
-        if(scrVal === tOff) 
+        if(scrVal === tOff || this.frames >= 30) 
         { 
           this.stopShow(); // reset function values
+          this.frames = 0;
           return;
         }
     }

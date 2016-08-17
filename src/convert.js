@@ -165,7 +165,6 @@ function studentGrades(lines, termMarks) {
     results.push(s);
   }
 
-  console.log(results.map((s)=>s.oldAvg));
   return [
     ['Student', 'Term', 'Term Post-Exam', 'Summative', 'Exam', 'Old Final', 'Final']
   ].concat(results.map((s) => [

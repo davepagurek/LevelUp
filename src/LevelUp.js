@@ -89,15 +89,17 @@ class LevelUp extends React.Component {
       .on('received_file', (data) => {
         this.setState({loading: true});
         fs.readFile(data.filename, (err, data) => {
+          data = "" + data;
           if (err) {
             this.setState({error: "Couldn't read the file selected", loading: false});
           } else {
             data = data.toString('utf8');
             let delim = (data.match(/,/g) || []).length >= (data.match(/;/g) || []).length ? ',' : ';';
-            csv.parse(data, {delimeter: delim}, (err, output) => {
+            csv.parse(data, {delimiter: delim}, (err, output) => {
               if (err) {
                 this.setState({error: `Couldn't parse the file: ${err}`, loading: false});
               } else {
+                console.log(output);
                 this.setState({data: output, loading: false});
               }
             });
@@ -109,7 +111,11 @@ class LevelUp extends React.Component {
   chooseFile(defaultFilename, callback) {
     callback = callback || function(){};
     var chooser = document.getElementById('fileDialog');
-    chooser.setAttribute('nwsaveas', defaultFilename || '');
+    if (defaultFilename === null) {
+      chooser.removeAttribute('nwsaveas');
+    } else {
+      chooser.setAttribute('nwsaveas', defaultFilename || '');
+    }
     var onChange = function() {
       callback(this.value);
       chooser.removeEventListener('change', onChange);
@@ -178,14 +184,38 @@ class LevelUp extends React.Component {
     }
   }
 
+  saveMappings() {
+    this.chooseFile('mark_mappings.json', (filename) => {
+      this.setState({loading: true});
+      fs.writeFile(filename, JSON.stringify(this.state.markMaps), (error) => {
+        if (error) return this.setState({error: `${error}`, loading: false});
+        this.setState({loading: false});
+        this.alert('File saved successfully.');
+        console.log('done');
+      });
+    });
+  }
+
+  loadMappings() {
+    this.chooseFile(null, (filename) => {
+      this.setState({loading: true});
+      fs.readFile(filename, (error, data) => {
+        if (error) return this.setState({error: `${error}`, loading: false});
+        this.setState({loading: false, markMaps: JSON.parse(""+data)});
+        this.alert('File loaded successfully.');
+        console.log('done');
+      });
+    });
+  }
+
   generateCodes(options) {
     var lines = this.state.data.slice();
     let result = makeCodes(lines, this.state.key || '', this.state.codeLength || 6);
     if (options.csv) {
-      this.setState({loading: true});
       csv.stringify(result, (err, csvText) => {
+        this.setState({loading: true});
         if (err) return this.setState({error: `${err}`, loading: false});
-        this.chooseFile('converted.csv', (filename) => {
+        this.chooseFile('codes.csv', (filename) => {
           fs.writeFile(filename, csvText, (error) => {
             if (error) return this.setState({error: `${error}`, loading: false});
             this.setState({loading: false});
@@ -195,8 +225,8 @@ class LevelUp extends React.Component {
         });
       });
     } else if (options.pdf) {
-      this.setState({loading: true});
       this.chooseFile('codes.pdf', (filename) => {
+        this.setState({loading: true});
         let html = `<style>${css}</style>` +
           '<table class="codes">' +
           result.map((row, i) => {
@@ -278,7 +308,7 @@ class LevelUp extends React.Component {
                   <div className='addMapping'>
                     <input onChange={(e)=>this.setState({nextLevel: e.target.value})} type='text' value={this.state.nextLevel} />
                     <span>&rarr;</span>
-                    <div className='mappingValue'>
+                    <div className='mappingValue double'>
                       <select onChange={(e) => {
                         let shouldIgnore = e.target.options[e.target.selectedIndex].value == 'ignore';
                         this.setState((state) => {
@@ -294,13 +324,13 @@ class LevelUp extends React.Component {
                         <option selected={!this.state.nextPercent || this.state.nextPercent != 'ignore'} value='value'>Value</option>
                       </select>
                       {!this.state.nextPercent || this.state.nextPercent != 'ignore' ?
-                        (<input onChange={(e)=>this.setState({nextPercent: parseFloat(e.target.value)})} type='number' min='0' max='100' value={this.state.nextPercent} />)
+                        (<input onChange={(e)=>this.setState({nextPercent: e.target.value})} type='number' min='0' max='100' value={this.state.nextPercent} />)
                         : undefined}
                     </div>
                     <button disabled={!this.state.nextLevel || !this.state.nextPercent} onClick={()=>{
                       if (this.state.nextLevel && this.state.nextPercent) {
                         this.setState((state) => {
-                          state.markMaps[state.nextLevel] = state.nextPercent;
+                          state.markMaps[state.nextLevel] = parseFloat(state.nextPercent);
                           delete state.nextLevel;
                           delete state.nextPercent;
                           return state;
@@ -312,15 +342,27 @@ class LevelUp extends React.Component {
                   </div>
                 </div>
                 <div className='column'>
-                  <button className='singleLine' onClick={()=>this.doConversions()}>
-                    Preview
-                  </button>
-                  <button className='singleLine' onClick={()=>this.doConversions({csv: true})}>
-                    Export CSV
-                  </button>
-                  <button className='singleLine' onClick={()=>this.doConversions({pdf: true})}>
-                    Export PDF
-                  </button>
+                  <div className='row'>
+                    <button onClick={()=>this.loadMappings()}>
+                      Load Mappings from File
+                    </button>
+                    <button onClick={()=>this.saveMappings()}>
+                      Save Mappings to File
+                    </button>
+                  </div>
+                  <div className="row">
+                    <button className='primary' onClick={()=>this.doConversions()}>
+                      Preview
+                    </button>
+                  </div>
+                  <div className="row">
+                    <button onClick={()=>this.doConversions({csv: true})}>
+                      Export CSV
+                    </button>
+                    <button onClick={()=>this.doConversions({pdf: true})}>
+                      Export PDF
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -364,10 +406,13 @@ class LevelUp extends React.Component {
                     onChange={(e)=>this.setState({codeLength: e.target.value})}
                   />
                   <h3>Code Length</h3>
-                  <button onClick={()=>this.generateCodes(false)}>
-                    Generate codes
+                  <button onClick={()=>this.generateCodes({})}>
+                    Preview
                   </button>
-                  <button onClick={()=>this.generateCodes(true)}>
+                  <button onClick={()=>this.generateCodes({csv: true})}>
+                    Export PDF
+                  </button>
+                  <button onClick={()=>this.generateCodes({pdf: true})}>
                     Export PDF
                   </button>
                 </div>
@@ -395,9 +440,6 @@ class LevelUp extends React.Component {
             <Menu>
               <MenuItem title='Calculate term averages' mode='convert'>
                 {'Convert all levels to percentages and compute weighted term averages'}
-              </MenuItem>
-              <MenuItem title='Generate report' mode='report'>
-                {'Create a chart showing student progress for each assessment'}
               </MenuItem>
               <MenuItem title='Generate codes' mode='codes'>
                 {'Create a unique codename for each assessment for each student'}
