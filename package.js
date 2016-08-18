@@ -1,11 +1,10 @@
 var NwBuilder = require('nw-builder');
 var nw = new NwBuilder({
-  files: ['index.html', './package.json', './dist/**/*', './bower_components/**/*', './css/**/*', '!./node_modules/nw-builder/**/*', '!./node_modules/nw/**/*', '!./node_modules/babel*/**/*', '!./node_modules/webpack/**/*', '!./node_modules/esperanto/**/*', '!./node_modules/nwjs-release/**/*'], // use the glob format
-  // './node_modules/**/*', 
+  files: ['index.html', './package.json', './dist/**/*', './node_modules/**/*', './bower_components/**/*', './css/**/*', '!./node_modules/nw-builder/**/*', '!./node_modules/nw/**/*', '!./node_modules/babel*/**/*', '!./node_modules/webpack/**/*', '!./node_modules/esperanto/**/*', '!./node_modules/nwjs-release/**/*'], // use the glob format
   platforms: ['osx64', 'win32'],
   version: '0.12.3',
   buildDir: './build',
-  zip: false
+  zip: true
 });
 
 //Log stuff you want
