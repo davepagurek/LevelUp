@@ -4,7 +4,7 @@ var nw = new NwBuilder({
   platforms: ['osx64', 'win32'],
   version: '0.12.3',
   buildDir: './build',
-  zip: true
+  zip: false
 });
 
 //Log stuff you want

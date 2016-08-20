@@ -410,7 +410,7 @@ class LevelUp extends React.Component {
                     Preview
                   </button>
                   <button onClick={()=>this.generateCodes({csv: true})}>
-                    Export PDF
+                    Export CSV
                   </button>
                   <button onClick={()=>this.generateCodes({pdf: true})}>
                     Export PDF
