@@ -53,15 +53,18 @@ class FileUploader extends React.Component {
   }
   render() {
     return(
-      <div className='start'>
-        <div className={`drop_target ${this.state.over ? 'over' : ''}`}>
-          <span>
-            {'Drag and drop a .csv file here or click here to browse for one'}
-          </span>
-          <form id='file_form'>
-            <input type='file' accept='.csv' className='file_input' />
-          </form>
+      <div>
+        <div className='start'>
+          <div className={`drop_target ${this.state.over ? 'over' : ''}`}>
+            <span>
+              {'Drag and drop a .csv file here or click here to browse for one'}
+            </span>
+            <form id='file_form'>
+              <input type='file' accept='.csv' className='file_input' />
+            </form>
+          </div>
         </div>
+        <h6 style={{"text-align":"center"}}>By Dave Pagurek</h6>
       </div>
     );
   }

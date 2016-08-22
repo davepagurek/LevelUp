@@ -63,5 +63,15 @@
       "camelcase": 0,
       "no-underscore-dangle": 0
     }
+  },
+  "window": {
+    "title": "LevelUp",
+    "icon": "icons/icon.png",
+    "toolbar": false,
+    "width": 800,
+    "height": 500,
+    "position": "center",
+    "min_width": 600,
+    "min_height": 400
   }
 }

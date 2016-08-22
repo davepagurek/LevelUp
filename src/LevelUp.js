@@ -136,7 +136,7 @@ class LevelUp extends React.Component {
     let result = studentGrades(lines, this.state.markMaps);
 
     if (options.csv) {
-      csv.stringify(result, (err, csvText) => {
+      csv.stringify(result, {quotedString: true}, (err, csvText) => {
         if (err) return this.setState({error: `${err}`, loading: false});
         this.chooseFile('converted.csv', (filename) => {
           this.setState({loading: true});
@@ -212,7 +212,7 @@ class LevelUp extends React.Component {
     var lines = this.state.data.slice();
     let result = makeCodes(lines, this.state.key || '', this.state.codeLength || 6);
     if (options.csv) {
-      csv.stringify(result, (err, csvText) => {
+      csv.stringify(result, {quotedString: true}, (err, csvText) => {
         this.setState({loading: true});
         if (err) return this.setState({error: `${err}`, loading: false});
         this.chooseFile('codes.csv', (filename) => {
