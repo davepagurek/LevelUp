@@ -64,7 +64,7 @@ class FileUploader extends React.Component {
             </form>
           </div>
         </div>
-        <h6 style={{"text-align":"center"}}>By Dave Pagurek</h6>
+        <h6 style={{textAlign:"center"}}>By Dave Pagurek</h6>
       </div>
     );
   }

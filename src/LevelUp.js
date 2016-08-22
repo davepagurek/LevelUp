@@ -150,7 +150,7 @@ class LevelUp extends React.Component {
       });
     } else if (options.pdf) {
       let html = `<style>${css}</style>` +
-        '<table class="averages">' +
+        '<table class="averages"><tbody>' +
         result.map((row, i) => {
           return `<tr className=${i==0 ? 'header' : ''}>` +
             row.map((cell) => (i == 0 ?
@@ -159,7 +159,7 @@ class LevelUp extends React.Component {
             )).join(' ') +
           '</tr>';
         }).join(' ') +
-        '</table>';
+        '</tbody></table>';
       let options = {
         format: 'Letter',
         border: {
@@ -228,7 +228,7 @@ class LevelUp extends React.Component {
       this.chooseFile('codes.pdf', (filename) => {
         this.setState({loading: true});
         let html = `<style>${css}</style>` +
-          '<table class="codes">' +
+          '<table class="codes"><tbody>' +
           result.map((row, i) => {
             return `<tr className=${i==0 ? 'header' : ''}>` +
               row.map((cell) => (i == 0 ?
@@ -237,7 +237,7 @@ class LevelUp extends React.Component {
               )).join(' ') +
             '</tr>';
           }).join(' ') +
-          '</table>';
+          '</tbody></table>';
         let options = {
           format: 'Letter',
           border: {
@@ -368,16 +368,16 @@ class LevelUp extends React.Component {
             </section>
             {this.state.converted ? (
               <section className='results'>
-                <table className='averages'>
+                <table className='averages'><tbody>
                 {this.state.converted.map((row, i) => {
-                  return (<tr className={i==0 ? 'header' : ''}>
-                    {row.map((cell) => (i == 0 ?
-                      (<th>{cell}</th>)
-                      : (<td>{cell}</td>)
+                  return (<tr key={i} className={i==0 ? 'header' : ''}>
+                    {row.map((cell,j) => (i == 0 ?
+                      (<th key={j}>{cell}</th>)
+                      : (<td key={j}>{cell}</td>)
                     ))}
                   </tr>);
                 })}
-                </table>
+                </tbody></table>
               </section>
             ) : undefined}
           </div>
@@ -420,16 +420,16 @@ class LevelUp extends React.Component {
             </section>
             {this.state.codes ? (
               <section className='results'>
-                <table className='averages'>
+                <table className='averages'><tbody>
                 {this.state.codes.map((row, i) => {
-                  return (<tr className={i==0 ? 'header' : ''}>
-                    {row.map((cell) => (i == 0 ?
-                      (<th>{cell}</th>)
-                      : (<td>{cell}</td>)
+                  return (<tr key={i} className={i==0 ? 'header' : ''}>
+                    {row.map((cell, j) => (i == 0 ?
+                      (<th key={j}>{cell}</th>)
+                      : (<td key={j}>{cell}</td>)
                     ))}
                   </tr>);
                 })}
-                </table>
+                </tbody></table>
               </section>
             ) : undefined}
           </div>

@@ -14,7 +14,8 @@ let makeCodes = function(lines, key, length) {
         return row[i];
       } else {
         return md5(`${row[0]}${row[1]}${cell}${key || ''}`)
-          .substr(0, length);
+          .substr(0, length)
+          .replace(/^(\d+)e(\d+)$/ig, (match, begin, end) => `${begin}f${end}`);
       }
     }))));
 }
