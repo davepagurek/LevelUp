@@ -11,6 +11,13 @@ table {
   border-collapse:collapse;
   font-family: sans-serif;
 }
+table.report th {
+  font-size:0.8em;
+  white-space: nowrap;
+}
+table.report tr td:first-child {
+  page-break-inside: avoid;
+}
 
 tr, td, th {
   padding:20px;
@@ -24,6 +31,10 @@ th {
 td {
   border-right: 1px solid #7f8c8d;
   border-bottom: 1px solid #7f8c8d;
+}
+
+td.level {
+  padding: 5px;
 }
 
 tr:last-child td {
@@ -130,10 +141,96 @@ class LevelUp extends React.Component {
     this.setState({alert: text || ""});
   }
 
+  individualReport(i) {
+    if (!this.state.students || !this.state.students[i] || Object.keys(this.state.students[i].evaluationCategories).length == 0) {
+      return this.setState({error: 'No evaluation categories present.'});
+    }
+
+    let student = this.state.students[i];
+
+    let categorizedMarks = {};
+    Object.keys(student.categories).forEach((code) => {
+      categorizedMarks[code] = {name: student.categories[code], marks: []};
+    });
+
+    student.termLevels.forEach((mark, i) => {
+      let cat = student.evaluationCategories[i];
+      categorizedMarks[cat].marks.push(mark)
+    });
+    for (let c in categorizedMarks) {
+      if (categorizedMarks[c].marks.length == 0) {
+        delete categorizedMarks[c];
+      }
+    }
+
+    let sortedCategories = Object.keys(categorizedMarks)
+      .sort((a,b) => (parseInt(a) - parseInt(b)));
+    let sortedLevels = _.toPairs(this.state.markMaps)
+      .filter((pair) => pair[1] != 'ignore')
+      .sort((a, b) => {
+        if (a[1] < b[1]) {
+          return -1;
+        } else if (a[1] > b[1]) {
+          return 1;
+        } else {
+          let aName = a[0].replace(/\W/g, '');
+          let bName = b[0].replace(/\W/g, '');
+          if (aName < bName) {
+            return -1;
+          } else if (aName > bName) {
+            return 1;
+          } else {
+            return 0;
+          }
+        }
+        (pair)=>pair[1]
+      })
+    .reduce((pairs, next) => {
+      if (pairs.length == 0 || pairs[pairs.length-1][1] != next[1]) {
+        pairs.push(next);
+      }
+      return pairs;
+    }, []);
+
+    let html = `<style>${css}</style>` +
+      `<h1>${student.firstName} ${student.lastName}</h1>` +
+      '<table class="report"><tbody>' +
+      `<tr><th>Category</th>` +
+      sortedLevels.map((level) => `<th>${level[0]}</th>`).join('') +
+      `</tr>` +
+      sortedCategories.map((cat) => categorizedMarks[cat].marks.map((mark, i) => {
+        return `<tr>` +
+          (i == 0 ?
+           `<td rowspan='${categorizedMarks[cat].marks.length}'>${categorizedMarks[cat].name}</td>` : '') +
+          sortedLevels.map((level) => `<td class='level'>${mark.percent == level[1] ? mark.name : ''}</td>`).join('') +
+          `</tr>`;
+      }).join('')).join('') +
+      `</tbody></table>`;
+
+    let options = {
+      format: 'Letter',
+      border: {
+        "top": "0.8in",
+        "right": "0.5in",
+        "bottom": "0.8in",
+        "left": "0.5in"
+      }
+    };
+    this.chooseFile(`${student.lastName}, ${student.firstName} - report.pdf`, (filename) => {
+      this.setState({loading: true});
+      pdf.create(html, options).toFile(filename, (error, res) => {
+        if (error) return this.setState({error: `${error}`, loading: false});
+        this.setState({loading: false});
+        this.alert('File saved successfully.');
+      });
+    });
+  }
+
   doConversions(options) {
     options = options || {};
     var lines = this.state.data.slice();
-    let result = studentGrades(lines, this.state.markMaps);
+    let students = convert(lines, this.state.markMaps);
+    let results = grades(students);
 
     if (options.csv) {
       csv.stringify(result, {quotedString: true}, (err, csvText) => {
@@ -178,7 +275,7 @@ class LevelUp extends React.Component {
         });
       });
     } else {
-      this.setState({converted: result}, () => {
+      this.setState({students: students, converted: results}, () => {
         smoothScr.anim('.results');
       });
     }
@@ -375,6 +472,19 @@ class LevelUp extends React.Component {
                       (<th key={j}>{cell}</th>)
                       : (<td key={j}>{cell}</td>)
                     ))}
+                    {i == 0 ?
+                      (
+                        <th>
+                        </th>
+                      ) :
+                      (
+                        <td>
+                          <button onClick={()=>this.individualReport(i-1)}>
+                            Individual report
+                          </button>
+                        </td>
+                      )
+                    }
                   </tr>);
                 })}
                 </tbody></table>

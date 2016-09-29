@@ -36,6 +36,12 @@
 
         var eOff, pOff, tOff, scrVal, pos, dir, step;
 
+        if (!document.querySelector(id)) {
+          this.stopShow(); // reset function values
+          this.frames = 0;
+          return;
+        }
+
         eOff = document.querySelector(id).offsetTop; // element offsetTop
 
         tOff =  this.getRealTop(document.querySelector(id).parentNode); // terminus point 

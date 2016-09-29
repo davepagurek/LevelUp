@@ -6,6 +6,7 @@ var ERROR = -2;
 function Student(lastName, firstName) {
   this.lastName = lastName || "";
   this.firstName = firstName || "";
+  this.termLevels = [];
   this.termMarks = [];
   this.term = 0;
   this.termFinal = 0;
@@ -17,7 +18,7 @@ function Student(lastName, firstName) {
   this.finalAvg = 0;
 }
 
-function studentGrades(lines, termMarks) {
+function convert(lines, termMarks) {
   //Converts a level to a percent
   var getPercent = function(str) {
 
@@ -41,11 +42,35 @@ function studentGrades(lines, termMarks) {
     return termMarks[str];
   }
   var results = [];
+  var categories = {};
+  var evaluationCategories = [];
 
   var header = lines.shift();
-  while (header[0] != "Type") {
+  while (!header[0].match("Type")) {
+    if (header[0].match(/EXPECTATION LEGEND/)) {
+      header = lines.shift();
+      if (!header || header.length == 0) return Dispatcher.emit('error', {message: "No \"(End)\" found for expectations legend."});
+      while (!header[0].match(/\(End\)/)) {
+        categories[header[0].replace(/(\r\n|\n|\r)/gm,"")] = header[1];
+        header = lines.shift();
+        if (!header || header.length == 0) return Dispatcher.emit('error', {message: "No \"(End)\" found for expectations legend."});
+      }
+    }
+
+    if (header[0].match(/Expectation/)) {
+      evaluationCategories = header
+        .slice(2)
+        .map((cell) => cell.replace(/(\r\n|\n|\r)/gm,""));
+
+      for (let i=1; i < evaluationCategories.length; i++) {
+        if (evaluationCategories[i] == '') {
+          evaluationCategories[i] = evaluationCategories[i-1];
+        }
+      }
+    }
+
     header = lines.shift();
-    if (!header || !header.length || header.length<0) return Dispatcher.emit('error', {message: "Either \"Type\" is missing from the header row or the CSV uses the wrong deliminator."});
+    if (!header || header.length == 0) return Dispatcher.emit('error', {message: "Either \"Type\" is missing from the header row or the CSV uses the wrong deliminator."});
   }
 
   for (var h=0; h<header.length; h++) {
@@ -61,10 +86,13 @@ function studentGrades(lines, termMarks) {
     //create a new Student and add any marks found in O.A, S, or E columns to their arrays
     var s = new Student(lines[row][0], lines[row][1]);
     for (var col=2; col<header.length; col++) {
-      var percent = IGNORE;
-      if (header[col].indexOf("O.A")===0 || header[col].indexOf("S")===0 || header[col].indexOf("E")===0) {
-        percent = getPercent(lines[row][col]);
-      }
+      let percent = getPercent(lines[row][col]);
+
+      s.termLevels.push({
+        name: header[col],
+        percent: percent,
+        level: lines[row][col]
+      });
 
       //Stop program on invalid input
       if (!percent && percent !== 0) {
@@ -72,9 +100,9 @@ function studentGrades(lines, termMarks) {
       } else {
         if (header[col].indexOf("O.A")===0) {
           s.termMarks.push(percent);
-        } else if (header[col].indexOf("S")===0 && header[col].length<=2) {
+        } else if (header[col].match(/^S\d+$/)) {
           s.summativeMarks.push(percent);
-        } else if (header[col].indexOf("E")===0 && header[col].length<=2) {
+        } else if (header[col].match(/^E\d+$/)) {
           s.examMarks.push(percent);
         }
       }
@@ -161,10 +189,17 @@ function studentGrades(lines, termMarks) {
       s.oldAvg = s.term;
     }
 
+    s.categories = categories;
+    s.evaluationCategories = evaluationCategories;
+
     //Add the student to the list of results
     results.push(s);
   }
 
+  return results;
+}
+
+function grades(results) {
   return [
     ['Student', 'Term', 'Term Post-Exam', 'Summative', 'Exam', 'Old Final', 'Final']
   ].concat(results.map((s) => [
