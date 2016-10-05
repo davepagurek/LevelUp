@@ -100,9 +100,9 @@ function convert(lines, termMarks) {
       } else {
         if (header[col].indexOf("O.A")===0) {
           s.termMarks.push(percent);
-        } else if (header[col].match(/^S\d+$/)) {
+        } else if (header[col].match(/^S\d*$/)) {
           s.summativeMarks.push(percent);
-        } else if (header[col].match(/^E\d+$/)) {
+        } else if (header[col].match(/^E\d*$/)) {
           s.examMarks.push(percent);
         }
       }

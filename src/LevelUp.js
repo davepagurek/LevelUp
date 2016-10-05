@@ -2,14 +2,19 @@ let csv = require('csv');
 let fs = require('fs');
 let pdf = require('html-pdf');
 let css = `
+html {
+  zoom: 0.68;
+}
+body {
+  background-color:#FFF;
+  color:#000;
+  font-family: sans-serif;
+}
 table {
   margin-left:auto;
   margin-right:auto;
   width:auto;
-  background-color:#FFF;
-  color:#000;
   border-collapse:collapse;
-  font-family: sans-serif;
 }
 table.report th {
   font-size:0.8em;
@@ -110,7 +115,6 @@ class LevelUp extends React.Component {
               if (err) {
                 this.setState({error: `Couldn't parse the file: ${err}`, loading: false});
               } else {
-                console.log(output);
                 this.setState({data: output, loading: false});
               }
             });
@@ -192,7 +196,7 @@ class LevelUp extends React.Component {
       return pairs;
     }, []);
 
-    let html = `<style>${css}</style>` +
+    let html = `<body><style>${css}</style>` +
       `<h1>${student.firstName} ${student.lastName}</h1>` +
       '<table class="report"><tbody>' +
       `<tr><th>Category</th>` +
@@ -206,6 +210,16 @@ class LevelUp extends React.Component {
           `</tr>`;
       }).join('')).join('') +
       `</tbody></table>`;
+
+    if (this.state.summary[i]) {
+      html +=
+        '<div>' +
+        `<p><strong>Overall term:</strong> ${student.term == 'ignore' ? '---' : student.term.toFixed(2) + '%'}</p>` +
+        `<p><strong>Summative:</strong> ${student.summative == 'ignore' ? '---' : student.summative.toFixed(2) + '%'}</p>` +
+        `<p><strong>Exam:</strong> ${student.exam == 'ignore' ? '---' : student.exam.toFixed(2) + '%'}</p>` +
+        '</div>';
+    }
+    html += '</body>'
 
     let options = {
       format: 'Letter',
@@ -230,7 +244,7 @@ class LevelUp extends React.Component {
     options = options || {};
     var lines = this.state.data.slice();
     let students = convert(lines, this.state.markMaps);
-    let results = grades(students);
+    let result = grades(students);
 
     if (options.csv) {
       csv.stringify(result, {quotedString: true}, (err, csvText) => {
@@ -247,16 +261,16 @@ class LevelUp extends React.Component {
       });
     } else if (options.pdf) {
       let html = `<style>${css}</style>` +
-        '<table class="averages"><tbody>' +
+        '<body><table class="averages"><tbody>' +
         result.map((row, i) => {
-          return `<tr className=${i==0 ? 'header' : ''}>` +
+          return `<tr class="${i==0 ? 'header' : ''}">` +
             row.map((cell) => (i == 0 ?
               `<th>${cell}</th>`
               : `<td>${cell}</td>`
             )).join(' ') +
           '</tr>';
         }).join(' ') +
-        '</tbody></table>';
+        '</tbody></table></body>';
       let options = {
         format: 'Letter',
         border: {
@@ -275,7 +289,7 @@ class LevelUp extends React.Component {
         });
       });
     } else {
-      this.setState({students: students, converted: results}, () => {
+      this.setState({students: students, converted: result, summary: students.map(()=>false)}, () => {
         smoothScr.anim('.results');
       });
     }
@@ -324,7 +338,7 @@ class LevelUp extends React.Component {
     } else if (options.pdf) {
       this.chooseFile('codes.pdf', (filename) => {
         this.setState({loading: true});
-        let html = `<style>${css}</style>` +
+        let html = `<body><style>${css}</style>` +
           '<table class="codes"><tbody>' +
           result.map((row, i) => {
             return `<tr className=${i==0 ? 'header' : ''}>` +
@@ -334,7 +348,7 @@ class LevelUp extends React.Component {
               )).join(' ') +
             '</tr>';
           }).join(' ') +
-          '</tbody></table>';
+          '</tbody></table></body>';
         let options = {
           format: 'Letter',
           border: {
@@ -474,15 +488,43 @@ class LevelUp extends React.Component {
                     ))}
                     {i == 0 ?
                       (
-                        <th>
-                        </th>
+                        [
+                          <th>
+                            <span>Include summary</span>
+                            <input
+                              type='checkbox'
+                              checked={_.every(this.state.summary)}
+                              onChange={()=>{
+                                if (_.every(this.state.summary)) {
+                                  this.setState({summary: this.state.summary.map(()=>false)});
+                                } else {
+                                  this.setState({summary: this.state.summary.map(()=>true)});
+                                }
+                              }}
+                            />
+                          </th>,
+                          <th>
+                          </th>
+                        ]
                       ) :
                       (
-                        <td>
-                          <button onClick={()=>this.individualReport(i-1)}>
+                        [
+                          <td>
+                            <input
+                              type='checkbox'
+                              checked={this.state.summary[i-1]}
+                              onChange={()=>this.setState((state)=>{
+                                state.summary[i-1] = !state.summary[i-1];
+                                return state;
+                              })}
+                            />
+                          </td>,
+                          <td>
+                            <button onClick={()=>this.individualReport(i-1)}>
                             Individual report
-                          </button>
-                        </td>
+                            </button>
+                          </td>
+                        ]
                       )
                     }
                   </tr>);
@@ -556,7 +598,7 @@ class LevelUp extends React.Component {
               </MenuItem>
             </Menu>
             <section className='center'>
-              <button onClick={()=>this.setState({data:null})}>
+              <button onClick={()=>this.setState({data:null, converted: null, students: null, summary: null})}>
                 Pick another file
               </button>
             </section>
