@@ -98,6 +98,7 @@ class LevelUp extends React.Component {
     };
 
     Dispatcher
+      .setRootStateComponent(this)
       .on('reset', (data)=>this.setState({path: []}))
       .on('back', (data)=>this.setState({path: this.state.slice(0, data.amount+1)}))
       .on('mode_set', (data)=>this.setState({path: this.state.path.concat([data.mode])}))
@@ -120,7 +121,13 @@ class LevelUp extends React.Component {
             });
           }
         })
-      });
+      })
+      .on("LoadMapping", this.loadMappings)
+      .on("SaveMapping", this.saveMappings)
+      .on("DoConversions", (data) => this.doConversions(data));
+
+    setConverterReducers(Dispatcher);
+    setMarkMappingCreatorReducers(Dispatcher);
   }
 
   chooseFile(defaultFilename, callback) {
@@ -256,7 +263,7 @@ class LevelUp extends React.Component {
             this.setState({loading: false});
             this.alert('File saved successfully.');
             console.log('done');
-          })
+          });
         });
       });
     } else if (options.pdf) {
@@ -388,151 +395,11 @@ class LevelUp extends React.Component {
       switch (_.last(this.state.path)) {
       case ('convert'):
         return (
-          <div>
-            <section className='options'>
-              <div className='row'>
-                <div className='column'>
-                  <div className='mappings'>
-                    {_.map(
-                      _.sortBy(
-                        _.toPairs(this.state.markMaps),
-                        (pair)=>pair[0].replace(/\W/g, '')
-                      ),
-                      (pair) => {
-                        let [k, v] = pair;
-                        return (<div className='markMap'>
-                          <div className='info'>
-                            <span>{k}</span>
-                            <span>&rarr;</span>
-                            <span>{v}</span>
-                          </div>
-                          <button onClick={()=>this.setState((state)=>{
-                            delete state.markMaps[k];
-                            return state;
-                          })}>
-                            Remove
-                          </button>
-                        </div>);
-                      }
-                    )}
-                  </div>
-                  <div className='addMapping'>
-                    <input onChange={(e)=>this.setState({nextLevel: e.target.value})} type='text' value={this.state.nextLevel} />
-                    <span>&rarr;</span>
-                    <div className='mappingValue double'>
-                      <select onChange={(e) => {
-                        let shouldIgnore = e.target.options[e.target.selectedIndex].value == 'ignore';
-                        this.setState((state) => {
-                          if (shouldIgnore) {
-                            state.nextPercent = 'ignore';
-                          } else {
-                            delete state.nextPercent;
-                          }
-                          return state;
-                        });
-                      }}>
-                        <option selected={this.state.nextPercent=='ignore'} value='ignore'>Ignore</option>
-                        <option selected={!this.state.nextPercent || this.state.nextPercent != 'ignore'} value='value'>Value</option>
-                      </select>
-                      {!this.state.nextPercent || this.state.nextPercent != 'ignore' ?
-                        (<input onChange={(e)=>this.setState({nextPercent: e.target.value})} type='number' min='0' max='100' value={this.state.nextPercent} />)
-                        : undefined}
-                    </div>
-                    <button disabled={!this.state.nextLevel || !this.state.nextPercent} onClick={()=>{
-                      if (this.state.nextLevel && this.state.nextPercent) {
-                        this.setState((state) => {
-                          state.markMaps[state.nextLevel] = parseFloat(state.nextPercent);
-                          delete state.nextLevel;
-                          delete state.nextPercent;
-                          return state;
-                        });
-                      }
-                    }}>
-                      Add mapping
-                    </button>
-                  </div>
-                </div>
-                <div className='column'>
-                  <div className='row'>
-                    <button onClick={()=>this.loadMappings()}>
-                      Load Mappings from File
-                    </button>
-                    <button onClick={()=>this.saveMappings()}>
-                      Save Mappings to File
-                    </button>
-                  </div>
-                  <div className="row">
-                    <button className='primary' onClick={()=>this.doConversions()}>
-                      Preview
-                    </button>
-                  </div>
-                  <div className="row">
-                    <button onClick={()=>this.doConversions({csv: true})}>
-                      Export CSV
-                    </button>
-                    <button onClick={()=>this.doConversions({pdf: true})}>
-                      Export PDF
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
-            {this.state.converted ? (
-              <section className='results'>
-                <table className='averages'><tbody>
-                {this.state.converted.map((row, i) => {
-                  return (<tr key={i} className={i==0 ? 'header' : ''}>
-                    {row.map((cell,j) => (i == 0 ?
-                      (<th key={j}>{cell}</th>)
-                      : (<td key={j}>{cell}</td>)
-                    ))}
-                    {i == 0 ?
-                      (
-                        [
-                          <th>
-                            <span>Include summary</span>
-                            <input
-                              type='checkbox'
-                              checked={_.every(this.state.summary)}
-                              onChange={()=>{
-                                if (_.every(this.state.summary)) {
-                                  this.setState({summary: this.state.summary.map(()=>false)});
-                                } else {
-                                  this.setState({summary: this.state.summary.map(()=>true)});
-                                }
-                              }}
-                            />
-                          </th>,
-                          <th>
-                          </th>
-                        ]
-                      ) :
-                      (
-                        [
-                          <td>
-                            <input
-                              type='checkbox'
-                              checked={this.state.summary[i-1]}
-                              onChange={()=>this.setState((state)=>{
-                                state.summary[i-1] = !state.summary[i-1];
-                                return state;
-                              })}
-                            />
-                          </td>,
-                          <td>
-                            <button onClick={()=>this.individualReport(i-1)}>
-                            Individual report
-                            </button>
-                          </td>
-                        ]
-                      )
-                    }
-                  </tr>);
-                })}
-                </tbody></table>
-              </section>
-            ) : undefined}
-          </div>
+          <Converter
+            markMaps={this.state.markMaps}
+            summary={this.state.summary}
+            converted={this.state.converted}
+          />
         );
       case 'codes':
         return (
@@ -611,14 +478,13 @@ class LevelUp extends React.Component {
   render() {
     return (
       <div className='app'>
-        {this.state.alert ? 
+        {this.state.alert &&
           (<div className='alert'>
             <p>{this.state.alert}</p>
             <button onClick={()=>this.setState({alert: null})}>
               OK
             </button>
           </div>)
-          : undefined
         }
         <div className={`loader ${this.state.loading ? 'open' : ''}`}>
           <h3>Loading...</h3>

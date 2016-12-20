@@ -67,7 +67,7 @@
   "window": {
     "title": "LevelUp",
     "icon": "icons/icon.png",
-    "toolbar": false,
+    "toolbar": true,
     "width": 900,
     "height": 500,
     "position": "center",
