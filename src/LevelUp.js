@@ -122,9 +122,20 @@ class LevelUp extends React.Component {
           }
         })
       })
+      .on("ChooseFile", (action) => {
+        this.chooseFile(action.name, action.callback);
+      })
       .on("LoadMapping", this.loadMappings)
       .on("SaveMapping", this.saveMappings)
-      .on("DoConversions", (data) => this.doConversions(data));
+      .reduce("ConversionsComplete", _.identity, (action) => {
+        if (!action.pdf && !action.csv) {
+          smoothScr.anim('.results');
+        } else {
+          this.alert("File saved successfully!");
+        }
+      }).reduce("ReportComplete", _.identity, (action) => {
+        this.alert("File saved successfully!");
+      });
 
     setConverterReducers(Dispatcher);
     setMarkMappingCreatorReducers(Dispatcher);
@@ -150,156 +161,6 @@ class LevelUp extends React.Component {
 
   alert(text) {
     this.setState({alert: text || ""});
-  }
-
-  individualReport(i) {
-    if (!this.state.students || !this.state.students[i] || Object.keys(this.state.students[i].evaluationCategories).length == 0) {
-      return this.setState({error: 'No evaluation categories present.'});
-    }
-
-    let student = this.state.students[i];
-
-    let categorizedMarks = {};
-    Object.keys(student.categories).forEach((code) => {
-      categorizedMarks[code] = {name: student.categories[code], marks: []};
-    });
-
-    student.termLevels.forEach((mark, i) => {
-      let cat = student.evaluationCategories[i];
-      categorizedMarks[cat].marks.push(mark)
-    });
-    for (let c in categorizedMarks) {
-      if (categorizedMarks[c].marks.length == 0) {
-        delete categorizedMarks[c];
-      }
-    }
-
-    let sortedCategories = Object.keys(categorizedMarks)
-      .sort((a,b) => (parseInt(a) - parseInt(b)));
-    let sortedLevels = _.toPairs(this.state.markMaps)
-      .filter((pair) => pair[1] != 'ignore')
-      .sort((a, b) => {
-        if (a[1] < b[1]) {
-          return -1;
-        } else if (a[1] > b[1]) {
-          return 1;
-        } else {
-          let aName = a[0].replace(/\W/g, '');
-          let bName = b[0].replace(/\W/g, '');
-          if (aName < bName) {
-            return -1;
-          } else if (aName > bName) {
-            return 1;
-          } else {
-            return 0;
-          }
-        }
-        (pair)=>pair[1]
-      })
-    .reduce((pairs, next) => {
-      if (pairs.length == 0 || pairs[pairs.length-1][1] != next[1]) {
-        pairs.push(next);
-      }
-      return pairs;
-    }, []);
-
-    let html = `<body><style>${css}</style>` +
-      `<h1>${student.firstName} ${student.lastName}</h1>` +
-      '<table class="report"><tbody>' +
-      `<tr><th>Category</th>` +
-      sortedLevels.map((level) => `<th>${level[0]}</th>`).join('') +
-      `</tr>` +
-      sortedCategories.map((cat) => categorizedMarks[cat].marks.map((mark, i) => {
-        return `<tr>` +
-          (i == 0 ?
-           `<td rowspan='${categorizedMarks[cat].marks.length}'>${categorizedMarks[cat].name}</td>` : '') +
-          sortedLevels.map((level) => `<td class='level'>${mark.percent == level[1] ? mark.name : ''}</td>`).join('') +
-          `</tr>`;
-      }).join('')).join('') +
-      `</tbody></table>`;
-
-    if (this.state.summary[i]) {
-      html +=
-        '<div>' +
-        `<p><strong>Overall term:</strong> ${student.term == 'ignore' ? '---' : student.term.toFixed(2) + '%'}</p>` +
-        `<p><strong>Summative:</strong> ${student.summative == 'ignore' ? '---' : student.summative.toFixed(2) + '%'}</p>` +
-        `<p><strong>Exam:</strong> ${student.exam == 'ignore' ? '---' : student.exam.toFixed(2) + '%'}</p>` +
-        '</div>';
-    }
-    html += '</body>'
-
-    let options = {
-      format: 'Letter',
-      border: {
-        "top": "0.8in",
-        "right": "0.5in",
-        "bottom": "0.8in",
-        "left": "0.5in"
-      }
-    };
-    this.chooseFile(`${student.lastName}, ${student.firstName} - report.pdf`, (filename) => {
-      this.setState({loading: true});
-      pdf.create(html, options).toFile(filename, (error, res) => {
-        if (error) return this.setState({error: `${error}`, loading: false});
-        this.setState({loading: false});
-        this.alert('File saved successfully.');
-      });
-    });
-  }
-
-  doConversions(options) {
-    options = options || {};
-    var lines = this.state.data.slice();
-    let students = convert(lines, this.state.markMaps);
-    let result = grades(students);
-
-    if (options.csv) {
-      csv.stringify(result, {quotedString: true}, (err, csvText) => {
-        if (err) return this.setState({error: `${err}`, loading: false});
-        this.chooseFile('converted.csv', (filename) => {
-          this.setState({loading: true});
-          fs.writeFile(filename, csvText, (error) => {
-            if (error) return this.setState({error: `${error}`, loading: false});
-            this.setState({loading: false});
-            this.alert('File saved successfully.');
-            console.log('done');
-          });
-        });
-      });
-    } else if (options.pdf) {
-      let html = `<style>${css}</style>` +
-        '<body><table class="averages"><tbody>' +
-        result.map((row, i) => {
-          return `<tr class="${i==0 ? 'header' : ''}">` +
-            row.map((cell) => (i == 0 ?
-              `<th>${cell}</th>`
-              : `<td>${cell}</td>`
-            )).join(' ') +
-          '</tr>';
-        }).join(' ') +
-        '</tbody></table></body>';
-      let options = {
-        format: 'Letter',
-        border: {
-          "top": "0.8in",
-          "right": "0.5in",
-          "bottom": "0.8in",
-          "left": "0.5in"
-        }
-      };
-      this.chooseFile('converted.pdf', (filename) => {
-        this.setState({loading: true});
-        pdf.create(html, options).toFile(filename, (error, res) => {
-          if (error) return this.setState({error: `${error}`, loading: false});
-          this.setState({loading: false});
-          this.alert('File saved successfully.');
-        });
-      });
-    } else {
-      this.setState({students: students, converted: result, summary: students.map(()=>false)}, () => {
-        smoothScr.anim('.results');
-      });
-    }
   }
 
   saveMappings() {
@@ -396,6 +257,8 @@ class LevelUp extends React.Component {
       case ('convert'):
         return (
           <Converter
+            data={this.state.data}
+            students={this.state.students}
             markMaps={this.state.markMaps}
             summary={this.state.summary}
             converted={this.state.converted}

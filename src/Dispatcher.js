@@ -1,5 +1,6 @@
-let listeners = {};
-let reducers = {};
+const listeners = {};
+const reducers = {};
+const reducerCallbacks = {};
 
 const getListeners = function(event) {
   if (!listeners[event]) {
@@ -14,6 +15,12 @@ const getReducers = function(event) {
   }
   return reducers[event];
 };
+const getReducerCallbacks = function(event) {
+  if (!reducerCallbacks[event]) {
+    reducerCallbacks[event] = [];
+  }
+  return reducerCallbacks[event];
+};
 
 const Dispatcher = {
   stateComponent: null,
@@ -21,8 +28,11 @@ const Dispatcher = {
     getListeners(event).push(callback);
     return this;
   },
-  reduce: function(event, callback) {
-    getReducers(event).push(callback);
+  reduce: function(event, reducer, callback) {
+    getReducers(event).push(reducer);
+    if (callback) {
+      getReducerCallbacks(event).push(callback);
+    }
     return this;
   },
   off: function(event, callback) {
@@ -40,11 +50,11 @@ const Dispatcher = {
   },
   calculateState: function(event, data) {
     this.stateComponent.setState(
-      (state) =>
-        getReducers(event).reduce(
-          (prevState, reducer) => reducer(prevState, data),
-          state
-        )
+      (state) => getReducers(event).reduce(
+        (prevState, reducer) => reducer(prevState, data),
+        state
+      ),
+      () => getReducerCallbacks(event).forEach((callback) => callback(data))
     );
     return this;
   },
@@ -52,4 +62,8 @@ const Dispatcher = {
     this.stateComponent = component;
     return this;
   }
+};
+
+const async = function(callback) {
+  setTimeout(callback, 0);
 };
