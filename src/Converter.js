@@ -9,7 +9,7 @@ function setConverterReducers(Dispatcher) {
         if (err) return Dispatcher.emit('error', {message: `${err}`});
         Dispatcher.emit("ChooseFile", {name: 'converted.csv', callback: (filename) => {
           fs.writeFile(filename, csvText, (error) => {
-            if (error) return Dispatcher.emit('error', {message: `${error}`});
+            if (error) return error(`${error}`);
             Dispatcher.emit('ConversionsComplete', {...options, students: students, converted: result});
           });
         }});
@@ -37,18 +37,18 @@ function setConverterReducers(Dispatcher) {
       };
       Dispatcher.emit("ChooseFile", {name: 'converted.pdf', callback: (filename) => {
         pdf.create(html, pdfOptions).toFile(filename, (error, res) => {
-          if (error) return Dispatcher.emit('error', {message: `${error}`});
+          if (error) return error(`${error}`);
           Dispatcher.emit('ConversionsComplete', {...options, students: students, converted: result});
         });
       }});
     } else {
-      async(() => Dispatcher.emit('ConversionsComplete', {...options, students: students, converted: result}));
+      defer(() => Dispatcher.emit('ConversionsComplete', {...options, students: students, converted: result}));
     }
   });
 
   Dispatcher.on("GenerateIndividualReport", (data) => {
     if (!data.student || Object.keys(data.student.evaluationCategories).length === 0) {
-      return async(() => Dispatcher.emit('error', {message: 'No evaluation categories present.'}));
+      error('No evaluation categories present.');
     }
 
     const {student} = data;
@@ -142,7 +142,7 @@ function setConverterReducers(Dispatcher) {
     };
     Dispatcher.emit('ChooseFile', {name: `${student.lastName}, ${student.firstName} - report.pdf`, callback: (filename) => {
       pdf.create(html, options).toFile(filename, (error, res) => {
-        if (error) return Dispatcher.emit('error', {message: `${error}`});
+        if (error) return error(`${error}`);
         Dispatcher.emit('ReportComplete');
       });
     }});

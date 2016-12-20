@@ -15,6 +15,7 @@ table {
   margin-right:auto;
   width:auto;
   border-collapse:collapse;
+  border: 1px solid #7f8c8d;
 }
 table.report th {
   font-size:0.8em;
@@ -22,11 +23,6 @@ table.report th {
 }
 table.report tr td:first-child {
   page-break-inside: avoid;
-}
-
-tr, td, th {
-  padding:20px;
-  margin:0;
 }
 
 th {
@@ -54,7 +50,8 @@ table {
   font-size:12px;
 }
 tr, td, th {
-  padding:11px;
+  padding:5px;
+  margin: 0;
 }
 `;
 
@@ -64,7 +61,6 @@ class LevelUp extends React.Component {
     this.state = {
       path: [],
       loading: false,
-      codeLength: 6,
       markMaps: {
         "R-": 25,
         "-R": 25,
@@ -135,10 +131,17 @@ class LevelUp extends React.Component {
         }
       }).reduce("ReportComplete", _.identity, (action) => {
         this.alert("File saved successfully!");
+      }).reduce('GenerateCodesComplete', _.identity, (action) => {
+        if (!action.pdf && !action.csv) {
+          smoothScr.anim('.results');
+        } else {
+          this.alert("File saved successfully!");
+        }
       });
 
     setConverterReducers(Dispatcher);
     setMarkMappingCreatorReducers(Dispatcher);
+    setCodesReducers(Dispatcher);
   }
 
   chooseFile(defaultFilename, callback) {
@@ -187,58 +190,6 @@ class LevelUp extends React.Component {
     });
   }
 
-  generateCodes(options) {
-    var lines = this.state.data.slice();
-    let result = makeCodes(lines, this.state.key || '', this.state.codeLength || 6);
-    if (options.csv) {
-      csv.stringify(result, {quotedString: true}, (err, csvText) => {
-        this.setState({loading: true});
-        if (err) return this.setState({error: `${err}`, loading: false});
-        this.chooseFile('codes.csv', (filename) => {
-          fs.writeFile(filename, csvText, (error) => {
-            if (error) return this.setState({error: `${error}`, loading: false});
-            this.setState({loading: false});
-            this.alert('File saved successfully.');
-            console.log('done');
-          })
-        });
-      });
-    } else if (options.pdf) {
-      this.chooseFile('codes.pdf', (filename) => {
-        this.setState({loading: true});
-        let html = `<body><style>${css}</style>` +
-          '<table class="codes"><tbody>' +
-          result.map((row, i) => {
-            return `<tr className=${i==0 ? 'header' : ''}>` +
-              row.map((cell) => (i == 0 ?
-                `<th>${cell}</th>`
-                : `<td>${cell}</td>`
-              )).join(' ') +
-            '</tr>';
-          }).join(' ') +
-          '</tbody></table></body>';
-        let options = {
-          format: 'Letter',
-          border: {
-            "top": "0.8in",
-            "right": "0.5in",
-            "bottom": "0.8in",
-            "left": "0.5in"
-          }
-        };
-        pdf.create(html, options).toFile(filename, (error, res) => {
-          if (error) return this.setState({error: `${error}`, loading: false});
-          this.setState({loading: false, codes: result});
-          this.alert('File saved successfully.');
-        });
-      });
-    } else {
-      this.setState({codes: result}, () => {
-        smoothScr.anim('.results');
-      });
-    }
-  }
-
   getAppBody() {
     if (this.state.error) {
       return (
@@ -266,55 +217,10 @@ class LevelUp extends React.Component {
         );
       case 'codes':
         return (
-          <div>
-            <section className='options'>
-              <div className='row'>
-                <div className='column'>
-                  <input
-                    type='text'
-                    value={this.state.key}
-                    onChange={(e)=>this.setState({key: e.target.value})}
-                  />
-                  <h3>Secret key</h3>
-                  <h4>{'Without using a secret key, it is possible (although still impractical) to decode the result. By adding a key that only you know, it is virtually impossible to decode without knowing the key. If this is not a concern, it may be left blank.'}</h4>
-
-                </div>
-                <div className='column'>
-                  <input
-                    type='number'
-                    min='1'
-                    max='64'
-                    value={this.state.codeLength}
-                    onChange={(e)=>this.setState({codeLength: e.target.value})}
-                  />
-                  <h3>Code Length</h3>
-                  <button onClick={()=>this.generateCodes({})}>
-                    Preview
-                  </button>
-                  <button onClick={()=>this.generateCodes({csv: true})}>
-                    Export CSV
-                  </button>
-                  <button onClick={()=>this.generateCodes({pdf: true})}>
-                    Export PDF
-                  </button>
-                </div>
-              </div>
-            </section>
-            {this.state.codes ? (
-              <section className='results'>
-                <table className='averages'><tbody>
-                {this.state.codes.map((row, i) => {
-                  return (<tr key={i} className={i==0 ? 'header' : ''}>
-                    {row.map((cell, j) => (i == 0 ?
-                      (<th key={j}>{cell}</th>)
-                      : (<td key={j}>{cell}</td>)
-                    ))}
-                  </tr>);
-                })}
-                </tbody></table>
-              </section>
-            ) : undefined}
-          </div>
+          <Codes
+            codes={this.state.codes}
+            data={this.state.data}
+          />
         );
       default:
         return (

@@ -64,6 +64,9 @@ const Dispatcher = {
   }
 };
 
-const async = function(callback) {
+const defer = function(callback) {
   setTimeout(callback, 0);
+};
+const error = function(message) {
+  defer(() => Dispatcher.emit('error', {message}));
 };
