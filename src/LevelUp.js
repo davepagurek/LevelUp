@@ -121,8 +121,7 @@ class LevelUp extends React.Component {
       .on("ChooseFile", (action) => {
         this.chooseFile(action.name, action.callback);
       })
-      .on("LoadMapping", this.loadMappings)
-      .on("SaveMapping", this.saveMappings)
+      .on("BeginLoading", () => this.setState({loading: true}))
       .reduce("ConversionsComplete", _.identity, (action) => {
         if (!action.pdf && !action.csv) {
           smoothScr.anim('.results');
@@ -137,6 +136,10 @@ class LevelUp extends React.Component {
         } else {
           this.alert("File saved successfully!");
         }
+      }).reduce("MarkMapLoadComplete", _.identity, (action) => {
+        this.alert("File loaded successfully!");
+      }).reduce("MarkMapSaveComplete", _.identity, (action) => {
+        this.alert("File saved successfully!");
       });
 
     setConverterReducers(Dispatcher);
@@ -164,30 +167,6 @@ class LevelUp extends React.Component {
 
   alert(text) {
     this.setState({alert: text || ""});
-  }
-
-  saveMappings() {
-    this.chooseFile('mark_mappings.json', (filename) => {
-      this.setState({loading: true});
-      fs.writeFile(filename, JSON.stringify(this.state.markMaps), (error) => {
-        if (error) return this.setState({error: `${error}`, loading: false});
-        this.setState({loading: false});
-        this.alert('File saved successfully.');
-        console.log('done');
-      });
-    });
-  }
-
-  loadMappings() {
-    this.chooseFile(null, (filename) => {
-      this.setState({loading: true});
-      fs.readFile(filename, (error, data) => {
-        if (error) return this.setState({error: `${error}`, loading: false});
-        this.setState({loading: false, markMaps: JSON.parse(""+data)});
-        this.alert('File loaded successfully.');
-        console.log('done');
-      });
-    });
   }
 
   getAppBody() {

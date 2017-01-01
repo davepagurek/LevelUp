@@ -67,6 +67,9 @@ const Dispatcher = {
 const defer = function(callback) {
   setTimeout(callback, 0);
 };
-const error = function(message) {
+const showError = function(message) {
   defer(() => Dispatcher.emit('error', {message}));
+};
+const beginLoading = function() {
+  Dispatcher.emit('BeginLoading');
 };

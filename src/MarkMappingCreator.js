@@ -1,9 +1,41 @@
 function setMarkMappingCreatorReducers(Dispatcher) {
+  Dispatcher.on("MarkMapLoad", () => {
+    Dispatcher.emit('ChooseFile', {name: null, callback: (filename) => {
+      fs.readFile(filename, (error, data) => {
+        if (error) return showError(`${error}`);
+        beginLoading();
+        try {
+          const parsed = JSON.parse(""+data);
+          defer(() => Dispatcher.emit('MarkMapLoadComplete', {markMaps: parsed}));
+        } catch (error) {
+          return showError(`${error}`);
+        }
+      });
+    }});
+  });
+
+  Dispatcher.on("MarkMapSave", (data) => {
+    Dispatcher.emit('ChooseFile', {name: 'mark_mappings.json', callback: (filename) => {
+      beginLoading();
+      fs.writeFile(filename, JSON.stringify(data.markMaps), (error) => {
+        if (error) return showError(`${error}`);
+        defer(() => Dispatcher.emit('MarkMapSaveComplete'));
+      });
+    }});
+  });
+
   Dispatcher.reduce("MarkMapDelete", (state, action) => {
     delete state.markMaps[action.index];
     return state;
   }).reduce("MarkMapCreate", (state, action) => {
     state.markMaps[action.level] = action.percent;
+    return state;
+  }).reduce("MarkMapLoadComplete", (state, action) => {
+    state.loading = false;
+    state.markMaps = action.markMaps;
+    return state;
+  }).reduce("MarkMapSaveComplete", (state, action) => {
+    state.loading = false;
     return state;
   });
 };
@@ -38,6 +70,10 @@ class MarkMappingCreator extends React.Component {
     });
   };
 
+  loadMarkMaps = () => Dispatcher.emit("MarkMapLoad");
+
+  saveMarkMaps = () => Dispatcher.emit("MarkMapSave", {markMaps: this.props.markMaps});
+
   render() {
     return (
       <div className='column'>
@@ -48,7 +84,7 @@ class MarkMappingCreator extends React.Component {
               (pair)=>pair[0].replace(/\W/g, '')
             ),
             (pair) => {
-              let [k, v] = pair;
+              const [k, v] = pair;
               return (<div className='markMap'>
                 <div className='info'>
                   <span>{k}</span>
@@ -76,6 +112,14 @@ class MarkMappingCreator extends React.Component {
           </div>
           <button disabled={!this.state.nextLevel || !this.state.nextPercent} onClick={this.createMapping}>
             Add mapping
+          </button>
+        </div>
+        <div className='row'>
+          <button onClick={this.loadMarkMaps}>
+            Load from File
+          </button>
+          <button onClick={this.saveMarkMaps}>
+            Save to File
           </button>
         </div>
       </div>

@@ -8,8 +8,9 @@ function setConverterReducers(Dispatcher) {
       csv.stringify(result, {quotedString: true}, (err, csvText) => {
         if (err) return Dispatcher.emit('error', {message: `${err}`});
         Dispatcher.emit("ChooseFile", {name: 'converted.csv', callback: (filename) => {
+          beginLoading();
           fs.writeFile(filename, csvText, (error) => {
-            if (error) return error(`${error}`);
+            if (error) return showError(`${error}`);
             Dispatcher.emit('ConversionsComplete', {...options, students: students, converted: result});
           });
         }});
@@ -36,8 +37,9 @@ function setConverterReducers(Dispatcher) {
         }
       };
       Dispatcher.emit("ChooseFile", {name: 'converted.pdf', callback: (filename) => {
+        beginLoading();
         pdf.create(html, pdfOptions).toFile(filename, (error, res) => {
-          if (error) return error(`${error}`);
+          if (error) return showError(`${error}`);
           Dispatcher.emit('ConversionsComplete', {...options, students: students, converted: result});
         });
       }});
@@ -48,7 +50,7 @@ function setConverterReducers(Dispatcher) {
 
   Dispatcher.on("GenerateIndividualReport", (data) => {
     if (!data.student || Object.keys(data.student.evaluationCategories).length === 0) {
-      error('No evaluation categories present.');
+      showError('No evaluation categories present.');
     }
 
     const {student} = data;
@@ -141,8 +143,9 @@ function setConverterReducers(Dispatcher) {
       }
     };
     Dispatcher.emit('ChooseFile', {name: `${student.lastName}, ${student.firstName} - report.pdf`, callback: (filename) => {
+      beginLoading();
       pdf.create(html, options).toFile(filename, (error, res) => {
-        if (error) return error(`${error}`);
+        if (error) return showError(`${error}`);
         Dispatcher.emit('ReportComplete');
       });
     }});
@@ -155,17 +158,11 @@ function setConverterReducers(Dispatcher) {
   }).reduce("ConverterToggleSummary", (state, action) => {
     state.summary[action.index] = !state.summary[action.index];
     return state;
-  }).reduce("DoConversions", (state, action) => {
-    state.loading = true;
-    return state;
   }).reduce("ConversionsComplete", (state, action) => {
     state.loading = false;
     state.students = action.students;
     state.converted = action.converted;
     state.summary = action.students.map(() => false);
-    return state;
-  }).reduce("GenerateIndividualReport", (state, action) => {
-    state.loading = true;
     return state;
   }).reduce("ReportComplete", (state, action) => {
     state.loading = false;
@@ -182,14 +179,6 @@ function Converter(props) {
             markMaps={props.markMaps}
           />
           <div className='column'>
-            <div className='row'>
-              <button onClick={()=>Dispatcher.emit("LoadMapping")}>
-                Load Mappings from File
-              </button>
-              <button onClick={()=>Dispatcher.emit("SaveMapping")}>
-                Save Mappings to File
-              </button>
-            </div>
             <div className="row">
               <button className='primary' onClick={()=>Dispatcher.emit("DoConversions", {data: props.data, markMaps: props.markMaps})}>
                 Convert

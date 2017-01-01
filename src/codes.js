@@ -30,16 +30,18 @@ function setCodesReducers(Dispatcher) {
 
     if (options.csv) {
       csv.stringify(result, {quotedString: true}, (err, csvText) => {
-        if (err) return error(`${err}`);
+        if (err) return showError(`${err}`);
         Dispatcher.emit('ChooseFile', {name: 'codes.csv', callback: (filename) => {
+          beginLoading();
           fs.writeFile(filename, csvText, (error) => {
-            if (error) return error(`${error}`);
+            if (error) return showError(`${error}`);
             Dispatcher.emit('GenerateCodesComplete', {...options, codes: result});
           })
         }});
       });
     } else if (options.pdf) {
       Dispatcher.emit('ChooseFile', {name: 'codes.pdf', callback: (filename) => {
+        beginLoading();
         const html = `<body><style>${css}</style>` +
           '<table class="codes"><tbody>' +
           result.map((row, i) => {
@@ -62,7 +64,7 @@ function setCodesReducers(Dispatcher) {
           }
         };
         pdf.create(html, pdfOptions).toFile(filename, (error, res) => {
-          if (error) return error(`${error}`);
+          if (error) return showError(`${error}`);
           Dispatcher.emit('GenerateCodesComplete', {...options, codes: result});
         });
       }});
@@ -71,10 +73,7 @@ function setCodesReducers(Dispatcher) {
     }
   });
 
-  Dispatcher.reduce('GenerateCodes', (state, action) => {
-    state.loading = true;
-    return state;
-  }).reduce('GenerateCodesComplete', (state, action) => {
+  Dispatcher.reduce('GenerateCodesComplete', (state, action) => {
     state.loading = false;
     state.codes = action.codes;
     return state;
